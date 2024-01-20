@@ -8,14 +8,28 @@ import { PositionEnum, StatusEnum } from 'src/common/enum/enums';
 import * as speakeasy from 'speakeasy';
 import { EmailService } from '../email/email.service';
 import { VerifyOtpDto } from './dto/verifyOTP.dto';
-import {  configDotenv} from "dotenv";
+import { JwtService } from '@nestjs/jwt';
+import { loginUserDto } from './dto/login.dto';
+
 @Injectable()
 export class AuthService {
-  
+  validateUserById(sub: any) {
+      throw new Error('Method not implemented.');
+  }
+
+  private generateJWT(user: User) {
+    const payload = {
+      id: user.id,
+      role: user.role,
+    };
+    return this.jwtService.sign(payload );
+  }
+
   constructor(
     @InjectRepository(User)
     private readonly UserRepository: Repository<User>,
     private readonly emailService: EmailService,
+    private readonly jwtService: JwtService
   ) { }
 
   async register(createUserDto: CreateUserDto): Promise<{ message: string, data?: User }> {
@@ -72,8 +86,18 @@ export class AuthService {
       throw new HttpException({ message: 'Invalid OTP', status: HttpStatus.BAD_REQUEST }, HttpStatus.BAD_REQUEST);
     }
   }
-  login(createUserDto: CreateUserDto) {
-    throw new Error('Method not implemented.');
+  async login(loginUserDto: loginUserDto):Promise<{token:string}>{
+    const {email, password} = loginUserDto;
+    const user = await this.UserRepository.findOne({where: {email:email}});
+    if (!user) {
+      throw new HttpException({ message: 'Invalid credentials', status: HttpStatus.UNAUTHORIZED }, HttpStatus.UNAUTHORIZED);
+    }
+    const passwordMatches = await bcrypt.compare(password, user.password);
+    if (!passwordMatches) {
+      throw new HttpException({ message: 'Invalid credentials', status: HttpStatus.UNAUTHORIZED }, HttpStatus.UNAUTHORIZED);
+    }
+    const token = this.generateJWT(user);
+    return {token};
   }
-
+ 
 }
