@@ -18,5 +18,9 @@ export class AuthController {
       return  await this.authService.verifyOTP(verifyOtpDto);
        
     }
+    @Post('login')
+    async login(@Body() createUserDto :CreateUserDto ){
+      return  this.authService.login(createUserDto)
+    }
   
 }

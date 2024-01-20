@@ -8,9 +8,10 @@ import { PositionEnum, StatusEnum } from 'src/common/enum/enums';
 import * as speakeasy from 'speakeasy';
 import { EmailService } from '../email/email.service';
 import { VerifyOtpDto } from './dto/verifyOTP.dto';
-
+import {  configDotenv} from "dotenv";
 @Injectable()
 export class AuthService {
+  
   constructor(
     @InjectRepository(User)
     private readonly UserRepository: Repository<User>,
@@ -71,6 +72,8 @@ export class AuthService {
       throw new HttpException({ message: 'Invalid OTP', status: HttpStatus.BAD_REQUEST }, HttpStatus.BAD_REQUEST);
     }
   }
-
+  login(createUserDto: CreateUserDto) {
+    throw new Error('Method not implemented.');
+  }
 
 }
