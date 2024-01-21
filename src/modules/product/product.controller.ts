@@ -15,7 +15,8 @@ import { addProductDto } from './dto/add-product.dto';
 
 @Controller('product')
 export class ProductController {
-    constructor(private productService: ProductService){}
+    constructor(private productService: ProductService) {}
+
     @Post('addProduct')
     @UseInterceptors(FileInterceptor('image'))
     async addNewProduct(
@@ -25,11 +26,10 @@ export class ProductController {
                 new FileTypeValidator({ fileType: '.(png|jpg)' }),
             ],
         })) image: Express.Multer.File,
-        @Body() addProductData:addProductDto,
+        @Body() addProductData: addProductDto,
     ) {
         try {
-            
-            const product = await this.productService.addProduct(addProductData, image);
+            const product = await this.productService.addNewProduct(addProductData, image);
             return product;
         } catch (error) {
             console.error('Error in addNewProduct:', error);

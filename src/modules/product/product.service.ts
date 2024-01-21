@@ -1,5 +1,3 @@
-import { Readable } from 'stream';
-import bufferToStream from 'buffer-to-stream';
 import { HttpException, HttpStatus, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -16,11 +14,10 @@ export class ProductService {
     private readonly cloudinaryService: CloudinaryService,
   ) {}
 
-  async addProduct(addProductData: addProductDto, image: Express.Multer.File): Promise<Product> {
+  async addNewProduct(addProductData: addProductDto, image: Express.Multer.File): Promise<{ status: string; message: string; data: Product }> {
     try {
       const cloudinaryResult = await this.cloudinaryService.uploadImage(image, 'product');
-      const imageUrl = cloudinaryResult.secure_url;
-      const stream = bufferToStream(image.buffer);
+      const imageUrl = cloudinaryResult.secure_url; 
       const newProduct = this.productRepository.create({
         product_name: addProductData.product_name,
         image: imageUrl,
@@ -31,7 +28,11 @@ export class ProductService {
         product_availability: StatusEnum.ACTIVE,
       });
       const savedProduct = await this.productRepository.save(newProduct);
-      return savedProduct;
+      return {
+        status: 'success',
+        message: 'Product added successfully!',
+        data: savedProduct,
+      };
     } catch (error) {
       throw new HttpException(
         {
@@ -41,5 +42,8 @@ export class ProductService {
       );
     }
   }
+
+
+  
 
 }
