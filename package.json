@@ -19,9 +19,6 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
-  "resolutions": {
-    "jackspeak": "2.1.1"
-  },
   "dependencies": {
     "@nestjs-modules/mailer": "^1.10.3",
     "@nestjs/common": "^10.0.0",
