@@ -1,8 +1,10 @@
-import { Body, Controller, HttpException, HttpStatus, Param, Post } from '@nestjs/common';
+import { Body, Controller, HttpException, HttpStatus, Param, Post, ValidationPipe,UsePipes } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from './dto/createuser.dto';
 import { VerifyOtpDto} from './dto/verifyOTP.dto';
 import { loginUserDto } from './dto/login.dto';
+import { LogoutDto } from './dto/logout.dto';
+import { RefreshTokensDto } from './dto/refreshToken.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -20,8 +22,21 @@ export class AuthController {
        
     }
     @Post('/login')
-    async login(@Body() loginUserDto :loginUserDto):Promise<{token:string}>{
-      return  this.authService.login(loginUserDto)
+    @UsePipes(ValidationPipe)
+    login(@Body() loginUserDto:loginUserDto ):Promise<any> {
+        return this.authService.login(loginUserDto);
     }
+  
+    
+    @Post('/logout')
+    async logout(@Body() logoutDto: LogoutDto) {
+      return this.authService.logout(logoutDto);
+    }
+  
+    
+    @Post('/refresh')
+      refreshToken(@Body() refreshTokensDto:RefreshTokensDto):Promise<any>{
+          return this.authService.refreshToken(refreshTokensDto);
+      }
   
 }

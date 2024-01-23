@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { User } from 'src/entities/User.entity';
 import { CreateUserDto } from './dto/createuser.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -10,26 +10,46 @@ import { EmailService } from '../email/email.service';
 import { VerifyOtpDto } from './dto/verifyOTP.dto';
 import { JwtService } from '@nestjs/jwt';
 import { loginUserDto } from './dto/login.dto';
+import { LogoutDto } from './dto/logout.dto';
+import { ConfigService } from '@nestjs/config';
+import { RefreshTokensDto } from './dto/refreshToken.dto';
 
 @Injectable()
 export class AuthService {
-  validateUserById(sub: any) {
-      throw new Error('Method not implemented.');
+  
+
+  private async generateAccessToken(user: User): Promise<string> {
+    const payload = { 
+      id: user.id,
+      name: user.username,
+      role: user.role,      
+    };
+    const accessToken = await this.jwtService.signAsync(payload, {
+      secret: this.configService.get<string>('ACCESS_TOKEN_SECRET'),
+      expiresIn: this.configService.get<string>('EXP_IN_ACCESS_TOKEN'),
+    });
+    return accessToken;
   }
 
-  private generateJWT(user: User) {
-    const payload = {
+  private async generateRefreshToken(user: User): Promise<string> {
+    const payload = { 
       id: user.id,
-      role: user.role,
+      name: user.username,
+      role: user.role,      
     };
-    return this.jwtService.sign(payload );
+    const refreshToken= await this.jwtService.signAsync(payload, {
+      secret: this.configService.get<string>('REFRESH_TOKEN_SECRET'),
+      expiresIn: this.configService.get<string>('EXP_IN_REFRESH_TOKEN'),
+    });
+    return refreshToken;
   }
 
   constructor(
     @InjectRepository(User)
     private readonly UserRepository: Repository<User>,
     private readonly emailService: EmailService,
-    private readonly jwtService: JwtService
+    private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
   ) { }
 
   async register(createUserDto: CreateUserDto): Promise<{ message: string, data?: User }> {
@@ -86,18 +106,59 @@ export class AuthService {
       throw new HttpException({ message: 'Invalid OTP', status: HttpStatus.BAD_REQUEST }, HttpStatus.BAD_REQUEST);
     }
   }
-  async login(loginUserDto: loginUserDto):Promise<{token:string}>{
+ 
+  async login(loginUserDto: loginUserDto): Promise<any> {
     const {email, password} = loginUserDto;
-    const user = await this.UserRepository.findOne({where: {email:email}});
+    const user = await this.UserRepository.findOne({where: {email:email}})
     if (!user) {
-      throw new HttpException({ message: 'Invalid credentials', status: HttpStatus.UNAUTHORIZED }, HttpStatus.UNAUTHORIZED);
+      throw new HttpException('User does not exist', HttpStatus.UNAUTHORIZED);
     }
     const passwordMatches = await bcrypt.compare(password, user.password);
-    if (!passwordMatches) {
-      throw new HttpException({ message: 'Invalid credentials', status: HttpStatus.UNAUTHORIZED }, HttpStatus.UNAUTHORIZED);
-    }
-    const token = this.generateJWT(user);
-    return {token};
+      if (!passwordMatches) {
+        throw new HttpException({ message: 'Invalid credentials', status: HttpStatus.UNAUTHORIZED }, HttpStatus.UNAUTHORIZED);
+      }
+    const refreshToken = await this.generateRefreshToken(user);
+    user.refreshToken = refreshToken; 
+    await this.UserRepository.save(user);
+  
+    const accessToken = await this.generateAccessToken(user); 
+    return { accessToken, refreshToken };
   }
- 
+  
+
+  async logout(logoutDto: LogoutDto): Promise<{massage:string}> {
+    const { refreshToken } = logoutDto;
+    const user = await this.UserRepository.findOne({ where: { refreshToken } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    user.refreshToken = null;
+    await this.UserRepository.save(user);
+    return { massage: "logout successfully"};
+  }
+
+  
+  async refreshToken(RefreshTokensDto:RefreshTokensDto): Promise<any> {
+    const decodedRefreshToken: any = this.jwtService.decode(RefreshTokensDto.refreshToken);
+    console.log(decodedRefreshToken);
+    
+    if (!decodedRefreshToken) {
+      throw new HttpException('Invalid refresh token', HttpStatus.BAD_REQUEST);
+    }
+    const user = await this.UserRepository.findOne({
+      where: { id: decodedRefreshToken.id},
+    });
+    if (!user) {
+      throw new HttpException('Refresh token is not valid', HttpStatus.BAD_REQUEST);
+    }
+    const currentTime = Math.floor(Date.now() / 1000);
+    const refreshTokenExp = decodedRefreshToken.exp;
+    if (refreshTokenExp < currentTime) {
+      user.refreshToken = null;
+      await this.UserRepository.save(user); 
+      throw new HttpException('Refresh token is expired', HttpStatus.BAD_REQUEST);
+    }
+    const accessToken = await this.generateAccessToken(user);
+    return { accessToken};
+  }
 }
