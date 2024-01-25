@@ -58,4 +58,6 @@ export class Product {
 
   @DeleteDateColumn({ nullable: true })
   delete_At: Date;
+
+  
 }
