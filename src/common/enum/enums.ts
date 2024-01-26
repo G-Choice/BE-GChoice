@@ -4,10 +4,10 @@ export enum StatusEnum {
   INACTIVE = 'inactive',
 }
 
-export enum StatusProjectEnum {
-  PENDING = 'pending',
-  DONE = 'done',
-  ON_PROGRESS = 'on_progress',
+export enum  PositionEnum {
+  ADMIN = 'admin',
+  USER = 'user',
+  SELLER= 'seller',
 }
 
 
