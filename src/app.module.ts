@@ -5,6 +5,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UserModule } from './modules/user/user.module';
 import { CloudinaryModule } from './modules/cloudinary/cloudinary.module';
 import { ProductModule } from './modules/product/product.module';
+import { AppController } from './app.controller';
 
 
 
@@ -16,7 +17,7 @@ import { ProductModule } from './modules/product/product.module';
     CloudinaryModule,
     ProductModule,
   ],
-  controllers: [],
+  controllers: [AppController],
   providers: [],
 })
 export class AppModule { }
