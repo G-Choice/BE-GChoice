@@ -10,7 +10,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
         type: 'postgres',
         host: configService.get('PG_HOST'),
         port: configService.get<number>('PG_PORT'),
-        database: configService.get('PG_USER'),
+        database: configService.get('PG_DB'),
         username: configService.get('PG_USER'),
         password: configService.get('PG_PASSWORD'),
         entities: [__dirname + './../../entities/*{.ts,.js}'],
