@@ -12,12 +12,12 @@ export class ProductService {
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
     private readonly cloudinaryService: CloudinaryService,
-  ) {}
+  ) { }
 
   async addNewProduct(addProductData: addProductDto, image: Express.Multer.File): Promise<{ status: string; message: string; data: Product }> {
     try {
       const cloudinaryResult = await this.cloudinaryService.uploadImage(image, 'product');
-      const imageUrl = cloudinaryResult.secure_url; 
+      const imageUrl = cloudinaryResult.secure_url;
       const newProduct = this.productRepository.create({
         product_name: addProductData.product_name,
         image: imageUrl,
@@ -44,6 +44,14 @@ export class ProductService {
   }
 
 
-  
+  async findAll(): Promise<Product[]> {
+    return await this.productRepository
+      .createQueryBuilder('product')
+      .leftJoinAndSelect('product.reviews', 'reviews')
+      .addSelect('AVG(reviews.rating)', 'avgRating')
+      .addGroupBy('product.id')
+      .addGroupBy('reviews.id')
+      .getRawMany();
+  }
 
 }

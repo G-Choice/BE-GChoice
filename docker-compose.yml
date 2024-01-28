@@ -1,28 +1,28 @@
 version: '3.9'
 services:
-  nestapp:
-    container_name: web_app
-    image: postgresql_db
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - 3000:3000
-    environment:
-      - DB_TYPE=${DB_TYPE}
-      - PG_HOST=${PG_HOST}
-      - PG_USER=${PG_USER}
-      - PG_PASSWORD=${PG_PASSWORD}
-      - PG_DB=${PG_DB}
-      - PG_PORT=${PG_PORT}
-  #     - REDIS_HOST=${REDIS_HOST} # Địa chỉ của Redis container
-  #     - REDIS_PORT=${REDIS_PORT} # Cổng Redis
-  #     - REDIS_PASS=${REDIS_PASS}
-    depends_on:
-      - db
-      # - redis
-    env_file:
-      - .env
+#   nestapp:
+#     container_name: web_app
+#     image: postgresql_db
+#     build:
+#       context: .
+#       dockerfile: Dockerfile
+#     ports:
+#       - 3000:3000
+#     environment:
+#       - DB_TYPE=${DB_TYPE}
+#       - PG_HOST=${PG_HOST}
+#       - PG_USER=${PG_USER}
+#       - PG_PASSWORD=${PG_PASSWORD}
+#       - PG_DB=${PG_DB}
+#       - PG_PORT=${PG_PORT}
+#   #     - REDIS_HOST=${REDIS_HOST} # Địa chỉ của Redis container
+#   #     - REDIS_PORT=${REDIS_PORT} # Cổng Redis
+#   #     - REDIS_PASS=${REDIS_PASS}
+#     depends_on:
+#       - db
+#       # - redis
+#     env_file:
+#       - .env
   db:
     container_name: db
     image: postgres:12

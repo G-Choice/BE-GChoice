@@ -2,6 +2,7 @@ import {
     Body,
     Controller,
     FileTypeValidator,
+    Get,
     InternalServerErrorException,
     MaxFileSizeValidator,
     ParseFilePipe,
@@ -12,6 +13,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ProductService } from './product.service';
 import { addProductDto } from './dto/add-product.dto';
+import { Product } from 'src/entities/product.entity';
 
 @Controller('product')
 export class ProductController {
@@ -36,4 +38,12 @@ export class ProductController {
             throw new InternalServerErrorException('Internal Server Error');
         }
     }
+
+    @Get()
+    async findAll(): Promise<Product[]> {
+        return await this.productService.findAll();
+  }
+
+    
+
 }

@@ -1,7 +1,7 @@
 import {  IsEnum, IsNotEmpty, IsNumber, IsString } from 'class-validator';
 import { PositionEnum, StatusEnum } from 'src/common/enum/enums';
-import { PrimaryGeneratedColumn, Column, Entity, CreateDateColumn, UpdateDateColumn, DeleteDateColumn } from 'typeorm';
-
+import { PrimaryGeneratedColumn, Column, Entity, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, OneToMany } from 'typeorm';
+import { ProductReview } from './ProductReviews.entity';
 @Entity('products')
 export class Product {
   @PrimaryGeneratedColumn()
@@ -59,5 +59,7 @@ export class Product {
   @DeleteDateColumn({ nullable: true })
   delete_At: Date;
 
-  
+  // Mối quan hệ một-nhiều giữa Product và ProductReview
+  @OneToMany(() => ProductReview, review => review.product)
+  reviews: ProductReview[];
 }
