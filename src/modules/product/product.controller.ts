@@ -7,6 +7,7 @@ import {
     MaxFileSizeValidator,
     ParseFilePipe,
     Post,
+    Query,
     UploadedFile,
     UseInterceptors,
 } from '@nestjs/common';
@@ -14,10 +15,11 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ProductService } from './product.service';
 import { addProductDto } from './dto/add-product.dto';
 import { Product } from 'src/entities/product.entity';
+import { GetProductParams } from './dto/get-product.dto';
 
-@Controller('product')
+@Controller('products')
 export class ProductController {
-    constructor(private productService: ProductService) {}
+    constructor(private productService: ProductService) { }
 
     @Post('addProduct')
     @UseInterceptors(FileInterceptor('image'))
@@ -39,11 +41,14 @@ export class ProductController {
         }
     }
 
+    //     @Get()
+    //     async findAll(): Promise<Product[]> {
+    //         return await this.productService.findAll();
+    //   }
     @Get()
-    async findAll(): Promise<Product[]> {
-        return await this.productService.findAll();
-  }
+    findAll(@Query() params: GetProductParams) {
+        return this.productService.getAllproduct(params);
+    }
 
-    
 
 }

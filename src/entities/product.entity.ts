@@ -1,7 +1,8 @@
 import {  IsEnum, IsNotEmpty, IsNumber, IsString } from 'class-validator';
 import { PositionEnum, StatusEnum } from 'src/common/enum/enums';
-import { PrimaryGeneratedColumn, Column, Entity, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, OneToMany } from 'typeorm';
+import { PrimaryGeneratedColumn, Column, Entity, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, OneToMany, ManyToOne } from 'typeorm';
 import { ProductReview } from './ProductReviews.entity';
+import { Category } from './category.entity';
 @Entity('products')
 export class Product {
   @PrimaryGeneratedColumn()
@@ -45,13 +46,6 @@ export class Product {
   @IsNumber()
   quantity_inventory: number;
 
-  @Column({
-    type: 'enum',
-    enum: StatusEnum,
-    default: StatusEnum.ACTIVE
-  })
-  product_availability: string;
-
   @CreateDateColumn({type:"timestamp"})
   created_at: Date;
 
@@ -62,4 +56,7 @@ export class Product {
   // Mối quan hệ một-nhiều giữa Product và ProductReview
   @OneToMany(() => ProductReview, review => review.product)
   reviews: ProductReview[];
+
+  @ManyToOne(() => Category, category => category.product)
+  category:Category[]
 }
