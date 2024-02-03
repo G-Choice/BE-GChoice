@@ -1,4 +1,4 @@
-import { IsString } from 'class-validator';
+import { IsNumber, IsString } from 'class-validator';
 import { PageOptionsDto } from 'src/common/dtos/pageOption';
 import { StatusEnum } from 'src/common/enum/enums';
 
@@ -8,7 +8,7 @@ export class GetProductParams extends PageOptionsDto {
     searchByName?: string = '';
     @IsString()
     sortByPrice?: string = '';
-    @IsString()
+    @IsNumber()
     searchByCategory?: number;
 
 }

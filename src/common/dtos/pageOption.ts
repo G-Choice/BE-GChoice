@@ -4,20 +4,6 @@ import { Order } from '../enum/enums';
 
 export class PageOptionsDto {
 
-  // @IsString()
-  // searchByName?: string = '';
-  // @IsString()
-  // searchByPrice?: string = '';
-  // @IsString()
-  // searchByCategory?: string = '';
-
-  @IsEnum(Order)
-  @IsOptional()
-  order?: Order = Order.DESC;
-
-  @IsString()
-  @IsOptional()
-  orderBy?: string = ''; 
   @Type(() => Number)
   @IsInt()
   @Min(1)

@@ -19,7 +19,6 @@ export class ProductReview extends BaseEntity {
     @Column({ type: "timestamp", nullable: true })
     created_at: Date;
     
-// Mối quan hệ  giữa ProductReview và Product
   @ManyToOne(() => Product, product => product.reviews)
   @JoinColumn({ name: 'product_id' })
   product: Product;
