@@ -40,13 +40,8 @@ export class ProductController {
             throw new InternalServerErrorException('Internal Server Error');
         }
     }
-
-    //     @Get()
-    //     async findAll(): Promise<Product[]> {
-    //         return await this.productService.findAll();
-    //   }
     @Get()
-    findAll(@Query() params: GetProductParams) {
+    getAllProduct(@Query() params: GetProductParams) {
         return this.productService.getAllproduct(params);
     }
 

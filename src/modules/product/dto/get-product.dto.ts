@@ -10,5 +10,6 @@ export class GetProductParams extends PageOptionsDto {
     sortByPrice?: string = '';
     @IsNumber()
     searchByCategory?: number;
-
+    
+    
 }

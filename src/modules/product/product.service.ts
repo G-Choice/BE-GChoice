@@ -8,6 +8,8 @@ import { PositionEnum, StatusEnum, Order } from 'src/common/enum/enums';
 import { GetProductParams } from './dto/get-product.dto';
 import { PageMetaDto } from 'src/common/dtos/pageMeta';
 import { ResponsePaginate } from 'src/common/dtos/responsePaginate';
+import { log } from 'console';
+
 
 @Injectable()
 export class ProductService {
@@ -45,50 +47,42 @@ export class ProductService {
     }
   }
 
-
-  // async findAll(): Promise<Product[]> {
-  //   return await this.productRepository
-  //     .createQueryBuilder('product')
-  //     .leftJoinAndSelect('product.reviews', 'reviews')
-  //     .select(['product.*'])
-  //     .addSelect('AVG(reviews.rating)', 'avgRating')
-  //     .addGroupBy('product.id')
-  //     .getRawMany();
-
-  // }
   async getAllproduct(params: GetProductParams) {
+
     const products = this.productRepository
       .createQueryBuilder('product')
-      .leftJoinAndSelect('product.reviews','reviews')
-      .select(['product.*'])
-      .addSelect('AVG(reviews.rating)','avgRating')
+      .leftJoinAndSelect('product.reviews', 'reviews')
+      .select(['product.*', 'product.id as product_id', 'product.quantity_sold as product_quantity_sold', 'product.price as product_price'])
+      .addSelect('AVG(reviews.rating)', 'avgRating')
       .addGroupBy('product.id')
       .where('product.status = :status', { status: StatusEnum.ACTIVE })
       .skip(params.skip)
       .take(params.take)
-      .orderBy('product.quantity_sold', Order.DESC);
+      .orderBy('product.quantity_sold', Order.DESC)
     if (params.searchByName) {
-      products.andWhere('product.product_name ILIKE :name', {
-        name: `%${params.searchByName}%`,
+      products.andWhere('LOWER(product.product_name) LIKE LOWER(:productName)', {
+        productName: `%${params.searchByName}%`,
       });
     }
     if (params.sortByPrice === 'asc') {
       products.orderBy('product.price', Order.ASC);
-    } 
+    }
     else if (params.sortByPrice === 'desc') {
       products.orderBy('product.price', Order.DESC);
     }
     if (params.searchByCategory) {
-    products.andWhere('category.id = :categoryId', {
-      categoryId: params.searchByCategory,
-    });
-  }
+      products.andWhere('category_id = :categoryId', {
+        categoryId: params.searchByCategory,
+      });
+    }
 
-    const [result, total] = await products.getManyAndCount();
+    const [_, total] = await products.getManyAndCount();
+    const result = await products.getRawMany();
+    console.log('result', result);
 
     const pageMetaDto = new PageMetaDto({
-      itemCount: total,
       pageOptionsDto: params,
+      itemCount: total,
     });
 
     return new ResponsePaginate(result, pageMetaDto, 'Success');
