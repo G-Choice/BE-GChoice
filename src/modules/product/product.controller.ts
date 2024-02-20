@@ -45,5 +45,8 @@ export class ProductController {
         return this.productService.getAllproduct(params);
     }
 
-
-}
+    @Get(':id')
+    getDetailProduct(@Query('id') id: number) {
+        return this.productService.getProductDetail(id);
+    }
+} 

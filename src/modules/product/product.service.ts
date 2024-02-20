@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, InternalServerErrorException, NotFoundException, Query } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { addProductDto } from './dto/add-product.dto';
@@ -48,9 +48,9 @@ export class ProductService {
   }
 
   async getAllproduct(params: GetProductParams) {
-    const  page = params.page;
+    const page = params.page;
     const take = params.take;
-    const skip = (page -1 )*take;
+    const skip = (page - 1) * take;
     const products = this.productRepository
       .createQueryBuilder('product')
       .leftJoinAndSelect('product.reviews', 'reviews')
@@ -58,7 +58,7 @@ export class ProductService {
       .addSelect('AVG(reviews.rating)', 'avgRating')
       .addGroupBy('product.id')
       .where('product.status = :status', { status: StatusEnum.ACTIVE })
-      .offset(skip )
+      .offset(skip)
       .limit(params.take)
       .orderBy('product.quantity_sold', Order.DESC)
     if (params.searchByName) {
@@ -90,4 +90,17 @@ export class ProductService {
     return new ResponsePaginate(result, pageMetaDto, 'Success');
   }
 
+  async getProductDetail(id: number) {
+    const product = await this.productRepository
+      .createQueryBuilder('product')
+      .leftJoinAndSelect('product.shop', 'shop')
+      .addSelect('shop.name', 'shop_name') 
+      .where('product.id = :id', { id })
+      .getOne();
+
+    if (!product) {
+      throw new NotFoundException('product not found');
+    }
+    return product;
+}
 }
