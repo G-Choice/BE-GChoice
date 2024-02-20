@@ -48,7 +48,9 @@ export class ProductService {
   }
 
   async getAllproduct(params: GetProductParams) {
-
+    const  page = params.page;
+    const take = params.take;
+    const skip = (page -1 )*take;
     const products = this.productRepository
       .createQueryBuilder('product')
       .leftJoinAndSelect('product.reviews', 'reviews')
@@ -56,8 +58,8 @@ export class ProductService {
       .addSelect('AVG(reviews.rating)', 'avgRating')
       .addGroupBy('product.id')
       .where('product.status = :status', { status: StatusEnum.ACTIVE })
-      .skip(params.skip)
-      .take(params.take)
+      .offset(skip )
+      .limit(params.take)
       .orderBy('product.quantity_sold', Order.DESC)
     if (params.searchByName) {
       products.andWhere('LOWER(product.product_name) LIKE LOWER(:productName)', {
