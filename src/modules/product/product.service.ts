@@ -9,6 +9,7 @@ import { GetProductParams } from './dto/get-product.dto';
 import { PageMetaDto } from 'src/common/dtos/pageMeta';
 import { ResponsePaginate } from 'src/common/dtos/responsePaginate';
 import { log } from 'console';
+import { ResponseItem } from 'src/common/dtos/responseItem';
 
 
 @Injectable()
@@ -48,8 +49,11 @@ export class ProductService {
   }
 
   async getAllproduct(params: GetProductParams) {
-    const page = params.page;
-    const take = params.take;
+    const page = params.page || 1;
+    const take = params.take || 6;
+    console.log(page);
+    console.log(take);
+    
     const skip = (page - 1) * take;
     const products = this.productRepository
       .createQueryBuilder('product')
@@ -90,21 +94,35 @@ export class ProductService {
     return new ResponsePaginate(result, pageMetaDto, 'Success');
   }
 
-  async getProductDetail(id: number) {
-    console.log(id);
-    
-    const product = await this.productRepository
-      .createQueryBuilder('product')
-      .leftJoinAndSelect('product.shop', 'shop')
-      .addSelect('shop.shop_name', 'shop_name') 
-      .where('product.id = :id', { id })
-      .andWhere('product.delete_At IS NULL')
-      .getOne();
-    console.log(product);
-    
-    if (!product) {
-      throw new NotFoundException('product not found');
+  async getProductDetail(id: number): Promise<ResponseItem<any>> {
+    try {
+      const product = await this.productRepository
+        .createQueryBuilder('product')
+        .leftJoinAndSelect('product.shop', 'shop') 
+        .select([
+          'product.id',
+          'product.product_name',
+          'product.image',
+          'product.price',
+          'product.status',
+          'product.description',
+          'product.brand',
+          'product.quantity_sold',
+          'product.quantity_inventory',
+          'product.created_at',
+          'shop.id AS shop_id',
+          'shop.shop_name'
+        ])
+        .where('product.id = :id', { id })
+        .andWhere('product.delete_At IS NULL')
+        .getRawOne();
+      if (!product) {
+        throw new NotFoundException('Product not found');
+      }
+      return new ResponseItem(product, 'Successfully!');
+    } catch (error) {
+      throw new NotFoundException('Product not found');
     }
-    return product;
-}
+  }
+  
 }
