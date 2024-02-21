@@ -1,6 +1,7 @@
 import { IsBoolean, IsEmail, IsNotEmpty, IsNumber, IsOptional, IsPhoneNumber, IsString } from 'class-validator';
 import { PositionEnum ,StatusEnum } from 'src/common/enum/enums';
-import { PrimaryGeneratedColumn, Column, Entity, CreateDateColumn } from 'typeorm';
+import { PrimaryGeneratedColumn, Column, Entity, CreateDateColumn, OneToMany } from 'typeorm';
+import { Shop } from './shop.entity';
 
 @Entity('users')
 export class User {
@@ -53,4 +54,7 @@ export class User {
   
   @CreateDateColumn({ type: 'timestamp' })
   created_at: Date;
+
+  @OneToMany(() => Shop, (shop) => shop.user)
+  shops: Shop[]
 }

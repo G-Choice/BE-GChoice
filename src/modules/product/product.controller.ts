@@ -5,6 +5,7 @@ import {
     Get,
     InternalServerErrorException,
     MaxFileSizeValidator,
+    Param,
     ParseFilePipe,
     Post,
     Query,
@@ -46,7 +47,7 @@ export class ProductController {
     }
 
     @Get(':id')
-    getDetailProduct(@Query('id') id: number) {
+    getDetailProduct(@Param('id') id: number) {
         return this.productService.getProductDetail(id);
     }
 } 

@@ -19,5 +19,5 @@ export class Category {
   @Column({type: 'timestamp', nullable: true })
   deleted_at?: Date;
   @OneToMany(() => Product , product => product.category)
-  product:Product
+  product:Product[]
 }

@@ -91,13 +91,17 @@ export class ProductService {
   }
 
   async getProductDetail(id: number) {
+    console.log(id);
+    
     const product = await this.productRepository
       .createQueryBuilder('product')
       .leftJoinAndSelect('product.shop', 'shop')
-      .addSelect('shop.name', 'shop_name') 
+      .addSelect('shop.shop_name', 'shop_name') 
       .where('product.id = :id', { id })
+      .andWhere('product.delete_At IS NULL')
       .getOne();
-
+    console.log(product);
+    
     if (!product) {
       throw new NotFoundException('product not found');
     }
