@@ -3,6 +3,8 @@ import { PositionEnum, StatusEnum } from 'src/common/enum/enums';
 import { PrimaryGeneratedColumn, Column, Entity, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, OneToMany, ManyToOne, JoinColumn } from 'typeorm';
 import { ProductReview } from './ProductReviews.entity';
 import { Category } from './category.entity';
+import { Shop } from './shop.entity';
+
 @Entity('products')
 export class Product {
   @PrimaryGeneratedColumn()
@@ -59,5 +61,9 @@ export class Product {
 
   @ManyToOne(() => Category, category => category.product)
   @JoinColumn({ name: 'category_id' })
-  category:Category[]
+  category:Category
+
+  @ManyToOne(() => Shop, shop => shop.products)
+  @JoinColumn({ name: 'shop_id' })
+  shop: Shop;
 }

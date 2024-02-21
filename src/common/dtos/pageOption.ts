@@ -21,3 +21,4 @@ export class PageOptionsDto {
     return (this.page - 1) * this.take;
   }
 }
+ 
