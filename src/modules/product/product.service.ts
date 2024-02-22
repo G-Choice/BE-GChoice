@@ -51,9 +51,6 @@ export class ProductService {
   async getAllproduct(params: GetProductParams) {
     const page = params.page || 1;
     const take = params.take || 6;
-    console.log(page);
-    console.log(take);
-    
     const skip = (page - 1) * take;
     const products = this.productRepository
       .createQueryBuilder('product')
@@ -84,8 +81,6 @@ export class ProductService {
 
     const [_, total] = await products.getManyAndCount();
     const result = await products.getRawMany();
-    console.log('result', result);
-
     const pageMetaDto = new PageMetaDto({
       pageOptionsDto: params,
       itemCount: total,
@@ -96,33 +91,27 @@ export class ProductService {
 
   async getProductDetail(id: number): Promise<ResponseItem<any>> {
     try {
-      const product = await this.productRepository
-        .createQueryBuilder('product')
-        .leftJoinAndSelect('product.shop', 'shop') 
-        .select([
-          'product.id',
-          'product.product_name',
-          'product.image',
-          'product.price',
-          'product.status',
-          'product.description',
-          'product.brand',
-          'product.quantity_sold',
-          'product.quantity_inventory',
-          'product.created_at',
-          'shop.id AS shop_id',
-          'shop.shop_name' 
-        ])
-        .where('product.id = :id', { id })
-        .andWhere('product.delete_At IS NULL')
-        .getRawOne();
-      if (!product) {
-        throw new NotFoundException('Product not found');
-      }
-      return new ResponseItem(product, 'Successfully!');
+        const productDetail = await this.productRepository
+            .createQueryBuilder('product')
+            .leftJoinAndSelect('product.shop', 'shop')
+            .leftJoinAndSelect('product.discounts', 'discount')
+            .leftJoinAndSelect('product.reviews', 'reviews')
+            .leftJoinAndSelect('reviews.users', 'users') 
+            .where('product.id = :id', { id })
+            .andWhere('product.delete_At IS NULL')
+            .andWhere('discount.status = :status', { status: 'active' })
+            .getOne();
+
+        if (!productDetail) {
+            throw new NotFoundException('Product not found');
+        }
+
+        return new ResponseItem(productDetail, 'Successfully!');
     } catch (error) {
-      throw new NotFoundException('Product not found');
+        throw new NotFoundException('Product not found');
     }
-  }
-  
+}
+
+
+
 }

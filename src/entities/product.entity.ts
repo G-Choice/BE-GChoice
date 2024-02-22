@@ -35,7 +35,9 @@ export class Product {
   @IsString()
   brand: string;
 
-
+  @Column()
+  image: string;
+  
   @Column({ default: 0 })
   @IsNumber()
   quantity_sold: number;

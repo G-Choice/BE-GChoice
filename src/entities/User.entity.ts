@@ -2,7 +2,8 @@ import { IsBoolean, IsEmail, IsNotEmpty, IsNumber, IsOptional, IsPhoneNumber, Is
 import { PositionEnum ,StatusEnum } from 'src/common/enum/enums';
 import { PrimaryGeneratedColumn, Column, Entity, CreateDateColumn, OneToMany } from 'typeorm';
 import { Shop } from './shop.entity';
-
+import { ProductReview } from './ProductReviews.entity';
+ 
 @Entity('users')
 export class User {
   
@@ -57,4 +58,7 @@ export class User {
 
   @OneToMany(() => Shop, (shop) => shop.user)
   shops: Shop[]
-}
+
+  @OneToMany(() => ProductReview , (productReviews) => productReviews.users)
+  productReviews:  ProductReview [];
+} 
