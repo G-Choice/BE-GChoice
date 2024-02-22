@@ -1,6 +1,7 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { IsInt, Min, IsDate, } from 'class-validator';
 import { Product } from './product.entity';
+import { StatusEnum } from 'src/common/enum/enums';
 
 @Entity('product_discount')
 export class ProductDiscount {
@@ -14,18 +15,13 @@ export class ProductDiscount {
 
   @Column({ type: 'decimal', precision: 5, scale: 2 })
   discountPercentage: number;
-
-  @Column({ type: 'timestamp' })
-  @IsDate()
-  discountStartDate: Date;
-
-  @Column({ type: 'timestamp' })
-  @IsDate()
-  discountEndDate: Date;
-
-  @Column()
-  @IsInt()
-  discountStatus: number;
+  
+  @Column({
+    type: 'enum',
+    enum: StatusEnum,
+    default: StatusEnum.ACTIVE
+  })
+  status: string;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
@@ -33,6 +29,9 @@ export class ProductDiscount {
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
   updatedAt: Date;
 
+  @ManyToOne(() => Product, product => product.discounts)
+  @JoinColumn({ name: 'product_id' })
+  products: Product;
 
 
 }
