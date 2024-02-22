@@ -4,6 +4,7 @@ import { PrimaryGeneratedColumn, Column, Entity, CreateDateColumn, UpdateDateCol
 import { ProductReview } from './ProductReviews.entity';
 import { Category } from './category.entity';
 import { Shop } from './shop.entity';
+import { ProductDiscount } from './product_discount.entity';
 
 @Entity('products')
 export class Product {
@@ -14,11 +15,6 @@ export class Product {
   @IsString()
   @IsNotEmpty()
   product_name: string;
-
-  @Column()
-  @IsString()
-  @IsNotEmpty()
-  image: string;
 
   @Column()
   @IsNumber()
@@ -66,4 +62,10 @@ export class Product {
   @ManyToOne(() => Shop, shop => shop.products)
   @JoinColumn({ name: 'shop_id' })
   shop: Shop;
+
+  @OneToMany(() => Product, product => product.shop)
+  products: Product[];
+
+  @OneToMany(() => ProductDiscount, discount => discount.products)
+  discounts: ProductDiscount[];
 }
