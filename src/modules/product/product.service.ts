@@ -111,7 +111,7 @@ export class ProductService {
           'product.quantity_inventory',
           'product.created_at',
           'shop.id AS shop_id',
-          'shop.shop_name'
+          'shop.shop_name' 
         ])
         .where('product.id = :id', { id })
         .andWhere('product.delete_At IS NULL')
