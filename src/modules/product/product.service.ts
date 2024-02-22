@@ -101,7 +101,6 @@ export class ProductService {
             .andWhere('product.delete_At IS NULL')
             .andWhere('discount.status = :status', { status: 'active' })
             .getOne();
-
         if (!productDetail) {
             throw new NotFoundException('Product not found');
         }
