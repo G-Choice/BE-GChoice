@@ -18,7 +18,7 @@ export class ProductReview extends BaseEntity {
     @IsNotEmpty({ message: 'Comment cannot be empty' })
     comment: string;
 
-    @Column({ type: "timestamp", nullable: true })
+    @Column({ type: "timestamp" })
     created_at: Date;
     
   @ManyToOne(() => Product, product => product.reviews)

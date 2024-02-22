@@ -91,26 +91,47 @@ export class ProductService {
 
   async getProductDetail(id: number): Promise<ResponseItem<any>> {
     try {
-        const productDetail = await this.productRepository
-            .createQueryBuilder('product')
-            .leftJoinAndSelect('product.shop', 'shop')
-            .leftJoinAndSelect('product.discounts', 'discount')
-            .leftJoinAndSelect('product.reviews', 'reviews')
-            .leftJoinAndSelect('reviews.users', 'users') 
-            .where('product.id = :id', { id })
-            .andWhere('product.delete_At IS NULL')
-            .andWhere('discount.status = :status', { status: 'active' })
-            .getOne();
-        if (!productDetail) {
-            throw new NotFoundException('Product not found');
-        }
+      const productDetail = await this.productRepository
+        .createQueryBuilder('product')
+        .leftJoin('product.shop', 'shop')
+        .addSelect(['shop.id', 'shop.shop_name', 'shop.shop_phone', 'shop.shop_email', 'shop.shop_address', 'shop.shop_image', 'shop.shop_description'])
+        .leftJoinAndSelect('product.discounts', 'discount')
+        .addSelect(['discount.id', 'discount.minQuantity', 'discount.discountPercentage'])
+        .leftJoinAndSelect('product.reviews', 'reviews')
+        .addSelect(['reviews.id', 'reviews.rating', 'reviews.comment', 'reviews.created_at'])
+        .leftJoinAndSelect('reviews.users', 'users')
+        .addSelect(['users.id', 'users.username', 'users.email', 'users.image'])
+        .where('product.id = :id', { id })
+        .andWhere('product.delete_At IS NULL')
+        .andWhere('discount.status = :status', { status: 'active' })
+        .getOne();
 
-        return new ResponseItem(productDetail, 'Successfully!');
-    } catch (error) {
+      if (!productDetail) {
         throw new NotFoundException('Product not found');
-    }
-}
+      }
 
+      let totalRating = 0;
+      productDetail.reviews.forEach(review => {
+        totalRating += review.rating;
+      });
+      const avgRating = (totalRating / productDetail.reviews.length).toFixed(1);
+      
+      const discountsWithPrice = productDetail.discounts.map(discount => {
+        const discountPrice = (productDetail.price - (productDetail.price * parseFloat(discount.discountPercentage) / 100));
+        return { ...discount, discountPrice };
+      });
+
+      const responseData = {
+        ...productDetail,
+        avgrating: avgRating,
+        discounts: discountsWithPrice
+      };
+
+      return new ResponseItem(responseData, 'Successfully!');
+    } catch (error) {
+      throw new NotFoundException('Product not found');
+    }
+  }
 
 
 }

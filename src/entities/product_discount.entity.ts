@@ -14,7 +14,7 @@
     minQuantity: number;
 
     @Column({ type: 'decimal', precision: 5, scale: 2 })
-    discountPercentage: number;
+    discountPercentage: string;
     
     @Column({
       type: 'enum',
