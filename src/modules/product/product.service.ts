@@ -26,7 +26,6 @@ export class ProductService {
       const imageUrl = cloudinaryResult.secure_url;
       const newProduct = this.productRepository.create({
         product_name: addProductData.product_name,
-        image: imageUrl,
         price: addProductData.price,
         status: StatusEnum.ACTIVE,
         description: addProductData.description,
