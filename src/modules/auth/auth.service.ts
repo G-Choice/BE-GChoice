@@ -13,6 +13,7 @@ import { loginUserDto } from './dto/login.dto';
 import { LogoutDto } from './dto/logout.dto';
 import { ConfigService } from '@nestjs/config';
 import { RefreshTokensDto } from './dto/refreshToken.dto';
+import { log } from 'console';
 
 @Injectable()
 export class AuthService {
@@ -110,6 +111,8 @@ export class AuthService {
   async login(loginUserDto: loginUserDto): Promise<any> {
     const {email, password} = loginUserDto;
     const user = await this.UserRepository.findOne({where: {email:email}})
+    console.log( user);
+    
     if (!user) {
       throw new HttpException('User does not exist', HttpStatus.UNAUTHORIZED);
     }

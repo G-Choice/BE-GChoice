@@ -22,7 +22,7 @@ export class User {
   @IsPhoneNumber(null, { message: 'Invalid phone number format' })
   number_phone: string;
 
-  @Column({ type: 'varchar', length: 255 ,select: false})
+  @Column({ type: 'varchar', length: 255})
   @IsOptional()
   password: string;
 

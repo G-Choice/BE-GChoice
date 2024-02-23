@@ -1,5 +1,6 @@
 import { IsNotEmpty, IsString } from "class-validator";
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Product } from "./product.entity";
 
 @Entity('product_image')
 
@@ -13,6 +14,7 @@ export class ProductImage {
     @IsNotEmpty()
     image_Url: string;
 
-  
+    @ManyToOne(() => Product ,product => product.images)
+    @JoinColumn({ name: 'product_id' })
+    products: Product;
 }
-

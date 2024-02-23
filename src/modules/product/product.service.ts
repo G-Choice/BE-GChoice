@@ -10,6 +10,7 @@ import { PageMetaDto } from 'src/common/dtos/pageMeta';
 import { ResponsePaginate } from 'src/common/dtos/responsePaginate';
 import { log } from 'console';
 import { ResponseItem } from 'src/common/dtos/responseItem';
+import { loginUserDto } from '../auth/dto/login.dto';
 
 
 @Injectable()
@@ -20,13 +21,16 @@ export class ProductService {
     private readonly cloudinaryService: CloudinaryService,
   ) { }
 
-  async addNewProduct(addProductData: addProductDto, image: Express.Multer.File): Promise<{ status: string; message: string; data: Product }> {
+  async addNewProduct(addProductData: addProductDto, images: Express.Multer.File[]): Promise<{ status: string; message: string; data: Product }> {
     try {
-      const cloudinaryResult = await this.cloudinaryService.uploadImage(image, 'product');
-      const imageUrl = cloudinaryResult.secure_url;
+     console.log(images);
+     
+      const cloudinaryResult = await this.cloudinaryService.uploadImages(images, 'product');
+      console.log(cloudinaryResult);
+      
       const newProduct = this.productRepository.create({
         product_name: addProductData.product_name,
-        image: imageUrl,
+        
         price: addProductData.price,
         status: StatusEnum.ACTIVE,
         description: addProductData.description,
