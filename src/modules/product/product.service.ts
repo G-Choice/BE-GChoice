@@ -109,8 +109,8 @@ export class ProductService {
     try {
       const productDetail = await this.productRepository
         .createQueryBuilder('product')
-        .leftJoin('product.category', 'category')
-        .addSelect('product.category_id')
+        .leftJoin('product.shop', 'shop')
+        .addSelect(['shop.id', 'shop.shop_name', 'shop.shop_phone', 'shop.shop_email', 'shop.shop_address', 'shop.shop_image', 'shop.shop_description'])
         .leftJoin('product.discounts', 'discount', 'discount.status = :status', { status: 'active' })
         .addSelect(['discount.id', 'discount.minQuantity', 'discount.discountPercentage'])
         .leftJoin('product.reviews', 'reviews')
