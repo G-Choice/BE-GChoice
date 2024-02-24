@@ -36,9 +36,6 @@ export class Product {
   @IsString()
   brand: string;
 
-  @Column()
-  image: string;
-  
   @Column({ default: 0 })
   @IsNumber()
   quantity_sold: number;
@@ -74,4 +71,5 @@ export class Product {
 
   @OneToMany(() => ProductImage, productImage => productImage.products)
   images:  ProductImage[];
+  totalRating: any;
 }

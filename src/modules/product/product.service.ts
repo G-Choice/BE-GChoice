@@ -1,6 +1,6 @@
 import { HttpException, HttpStatus, Injectable, InternalServerErrorException, NotFoundException, Query } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, getConnection } from 'typeorm';
 import { addProductDto } from './dto/add-product.dto';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { Product } from 'src/entities/product.entity';
@@ -11,32 +11,47 @@ import { ResponsePaginate } from 'src/common/dtos/responsePaginate';
 import { log } from 'console';
 import { ResponseItem } from 'src/common/dtos/responseItem';
 import { loginUserDto } from '../auth/dto/login.dto';
-
+import { Category } from 'src/entities/category.entity';
+import { ProductImage } from 'src/entities/product_image.entity';
+import { ProductReview } from 'src/entities/ProductReviews.entity';
 
 @Injectable()
 export class ProductService {
   constructor(
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
+    @InjectRepository(Category)
+    private readonly categoryRepository: Repository<Category>,
+    @InjectRepository(ProductImage)
+    private readonly productImageRepository: Repository<ProductImage>,
+    @InjectRepository(ProductReview)
+    private readonly productReviewRepository: Repository<ProductReview>,
     private readonly cloudinaryService: CloudinaryService,
   ) { }
 
-  async addNewProduct(addProductData: addProductDto, images: Express.Multer.File[]): Promise<{ status: string; message: string; data: Product }> {
+  async addNewProduct(addProductData: addProductDto, files: Array<Express.Multer.File>): Promise<{ status: string; message: string; data: Product }> {
     try {
-     console.log(images);
-     
-      const cloudinaryResult = await this.cloudinaryService.uploadImages(images, 'product');
-      console.log(cloudinaryResult);
-      
       const newProduct = this.productRepository.create({
         product_name: addProductData.product_name,
-        
         price: addProductData.price,
         status: StatusEnum.ACTIVE,
         description: addProductData.description,
         brand: addProductData.brand,
       });
+
       const savedProduct = await this.productRepository.save(newProduct);
+
+      const cloudinaryResults = await this.cloudinaryService.uploadImages(files, 'product');
+
+      const productImages: ProductImage[] = cloudinaryResults.map(result => {
+        const productImage = new ProductImage();
+        productImage.image_Url = result.secure_url;
+        productImage.products = savedProduct;
+        return productImage;
+      });
+
+      await this.productImageRepository.save(productImages);
+
       return {
         status: 'success',
         message: 'Product added successfully!',
@@ -52,54 +67,79 @@ export class ProductService {
     }
   }
 
+
+
   async getAllproduct(params: GetProductParams) {
     const page = params.page || 1;
     const take = params.take || 6;
     const skip = (page - 1) * take;
-    const products = this.productRepository
+
+    const productsQuery = this.productRepository
       .createQueryBuilder('product')
-      .leftJoinAndSelect('product.reviews', 'reviews')
-      .select(['product.*', 'product.id as product_id', 'product.quantity_sold as product_quantity_sold', 'product.price as product_price'])
-      .addSelect('AVG(reviews.rating)', 'avgRating')
-      .addGroupBy('product.id')
+      .leftJoinAndSelect('product.images', 'images')
+      .leftJoin('product.reviews', 'reviews')
       .where('product.status = :status', { status: StatusEnum.ACTIVE })
-      .offset(skip)
-      .limit(params.take)
-      .orderBy('product.quantity_sold', Order.DESC)
+      .groupBy('product.id')
+      .addGroupBy('images.id')
+      .skip(skip)
+      .take(take)
+      .orderBy('product.quantity_sold', Order.DESC);
+
     if (params.searchByName) {
-      products.andWhere('LOWER(product.product_name) LIKE LOWER(:productName)', {
+      productsQuery.andWhere('LOWER(product.product_name) LIKE LOWER(:productName)', {
         productName: `%${params.searchByName}%`,
       });
     }
+
     if (params.sortByPrice === 'asc') {
-      products.orderBy('product.price', Order.ASC);
+      productsQuery.orderBy('product.price', 'ASC');
+    } else if (params.sortByPrice === 'desc') {
+      productsQuery.orderBy('product.price', 'DESC');
     }
-    else if (params.sortByPrice === 'desc') {
-      products.orderBy('product.price', Order.DESC);
-    }
+
     if (params.searchByCategory) {
-      products.andWhere('category_id = :categoryId', {
+      productsQuery.andWhere('product.category_id = :categoryId', {
         categoryId: params.searchByCategory,
       });
     }
 
-    const [_, total] = await products.getManyAndCount();
-    const result = await products.getRawMany();
+    const [result, total] = await productsQuery.getManyAndCount();
+
+    const productIds = result.map(product => product.id);
+    console.log(productIds);
+
+    const avgRatings = await this.productReviewRepository
+      .createQueryBuilder('reviews')
+      .select('reviews.product_id')
+      .addSelect('AVG(reviews.rating)', 'avgRating')
+      .where('reviews.product_id IN (:...productIds)', { productIds: productIds })
+      .groupBy('reviews.product_id')
+      .getRawMany();
+
+    
+      const resultWithAvgRating = result.map((product: Product) => {
+        const avgRating = avgRatings.find(rating => rating.product_id === product.id);
+        return {
+          ...product,
+          avgRating: avgRating ? avgRating.avgRating : 0,
+        } ;
+      });
+
     const pageMetaDto = new PageMetaDto({
       pageOptionsDto: params,
       itemCount: total,
     });
 
-    return new ResponsePaginate(result, pageMetaDto, 'Success');
+    return new ResponsePaginate(resultWithAvgRating, pageMetaDto, 'Success');
   }
 
   async getProductDetail(id: number): Promise<ResponseItem<any>> {
     try {
       const productDetail = await this.productRepository
         .createQueryBuilder('product')
-        .leftJoin('product.shop', 'shop')
-        .addSelect(['shop.id', 'shop.shop_name', 'shop.shop_phone', 'shop.shop_email', 'shop.shop_address', 'shop.shop_image', 'shop.shop_description'])
-        .leftJoin('product.discounts', 'discount','discount.status = :status', { status: 'active' })
+        .leftJoin('product.category', 'category')
+        .addSelect('product.category_id')
+        .leftJoin('product.discounts', 'discount', 'discount.status = :status', { status: 'active' })
         .addSelect(['discount.id', 'discount.minQuantity', 'discount.discountPercentage'])
         .leftJoin('product.reviews', 'reviews')
         .addSelect(['reviews.id', 'reviews.rating', 'reviews.comment', 'reviews.created_at'])
@@ -116,7 +156,7 @@ export class ProductService {
       productDetail.reviews.forEach(review => {
         totalRating += review.rating;
       });
-      const avgRating = ((totalRating / productDetail.reviews.length) || 0).toFixed(1);
+      const avgRating = ((totalRating / productDetail.reviews.length) || 0).toFixed(0);
       const discountsWithPrice = productDetail.discounts.map(discount => {
         const discountPrice = (productDetail.price - (productDetail.price * parseFloat(discount.discountPercentage) / 100));
         return { ...discount, discountPrice };

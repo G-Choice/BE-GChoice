@@ -12,7 +12,7 @@ import {
     UploadedFiles,
     UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor, FileFieldsInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FileFieldsInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { ProductService } from './product.service';
 import { addProductDto } from './dto/add-product.dto';
 import { Product } from 'src/entities/product.entity';
@@ -22,21 +22,16 @@ import { GetProductParams } from './dto/get-product.dto';
 export class ProductController {
     constructor(private productService: ProductService) { }
 
-    @Post()
+    
     // @UseInterceptors(FileInterceptor('images', { limits: { files: 5 } }))
-    @UseInterceptors(FileFieldsInterceptor([{ name: 'images', maxCount: 5 }]))
+    @Post()
+    @UseInterceptors(FilesInterceptor('files', 5))
     async addNewProduct(
-        @UploadedFiles(new ParseFilePipe({
-            validators: [
-                new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 4 }),
-                new FileTypeValidator({ fileType: '.(png|jpg)' }),
-            ],
-            fileIsRequired: false,
-        })) images: Express.Multer.File[],
+        @UploadedFiles() files: Array<Express.Multer.File>,
         @Body() addProductData: addProductDto,
     ) {
         try {
-            const product = await this.productService.addNewProduct(addProductData,images);
+            const product = await this.productService.addNewProduct(addProductData,files);
             return product;
         } catch (error) {
             console.error('Error in addNewProduct:', error);
