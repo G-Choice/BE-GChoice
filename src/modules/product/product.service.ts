@@ -12,7 +12,7 @@ import { log } from 'console';
 import { ResponseItem } from 'src/common/dtos/responseItem';
 import { loginUserDto } from '../auth/dto/login.dto';
 import { Category } from 'src/entities/category.entity';
-import { ProductImage } from 'src/entities/product_image.entity';
+// import { ProductImage } from 'src/entities/product_image.entity';
 import { ProductReview } from 'src/entities/ProductReviews.entity';
 
 @Injectable()
@@ -22,8 +22,8 @@ export class ProductService {
     private readonly productRepository: Repository<Product>,
     @InjectRepository(Category)
     private readonly categoryRepository: Repository<Category>,
-    @InjectRepository(ProductImage)
-    private readonly productImageRepository: Repository<ProductImage>,
+    // @InjectRepository(ProductImage)
+    // private readonly productImageRepository: Repository<ProductImage>,
     @InjectRepository(ProductReview)
     private readonly productReviewRepository: Repository<ProductReview>,
     private readonly cloudinaryService: CloudinaryService,
@@ -31,27 +31,17 @@ export class ProductService {
 
   async addNewProduct(addProductData: addProductDto, files: Array<Express.Multer.File>): Promise<{ status: string; message: string; data: Product }> {
     try {
+    const cloudinaryResult = await this.cloudinaryService.uploadImages(files, 'product');
+    const secureUrls = cloudinaryResult.map(item => item.secure_url);
       const newProduct = this.productRepository.create({
         product_name: addProductData.product_name,
         price: addProductData.price,
+        images:secureUrls,
         status: StatusEnum.ACTIVE,
         description: addProductData.description,
         brand: addProductData.brand,
       });
-
       const savedProduct = await this.productRepository.save(newProduct);
-
-      const cloudinaryResults = await this.cloudinaryService.uploadImages(files, 'product');
-
-      const productImages: ProductImage[] = cloudinaryResults.map(result => {
-        const productImage = new ProductImage();
-        productImage.image_Url = result.secure_url;
-        productImage.products = savedProduct;
-        return productImage;
-      });
-
-      await this.productImageRepository.save(productImages);
-
       return {
         status: 'success',
         message: 'Product added successfully!',
@@ -72,65 +62,47 @@ export class ProductService {
   async getAllproduct(params: GetProductParams) {
     const page = params.page || 1;
     const take = params.take || 6;
+    console.log(page);
+    console.log(take);
+    
     const skip = (page - 1) * take;
-
-    const productsQuery = this.productRepository
+    const products = this.productRepository
       .createQueryBuilder('product')
-      .leftJoinAndSelect('product.images', 'images')
-      .leftJoin('product.reviews', 'reviews')
+      .leftJoinAndSelect('product.reviews', 'reviews')
+      .select(['product.*', 'product.id as product_id', 'product.quantity_sold as product_quantity_sold', 'product.price as product_price'])
+      .addSelect('AVG(reviews.rating)', 'avgRating')
+      .addGroupBy('product.id')
       .where('product.status = :status', { status: StatusEnum.ACTIVE })
-      .groupBy('product.id')
-      .addGroupBy('images.id')
-      .skip(skip)
-      .take(take)
-      .orderBy('product.quantity_sold', Order.DESC);
-
+      .offset(skip)
+      .limit(params.take)
+      .orderBy('product.quantity_sold', Order.DESC)
     if (params.searchByName) {
-      productsQuery.andWhere('LOWER(product.product_name) LIKE LOWER(:productName)', {
+      products.andWhere('LOWER(product.product_name) LIKE LOWER(:productName)', {
         productName: `%${params.searchByName}%`,
       });
     }
-
     if (params.sortByPrice === 'asc') {
-      productsQuery.orderBy('product.price', 'ASC');
-    } else if (params.sortByPrice === 'desc') {
-      productsQuery.orderBy('product.price', 'DESC');
+      products.orderBy('product.price', Order.ASC);
     }
-
+    else if (params.sortByPrice === 'desc') {
+      products.orderBy('product.price', Order.DESC);
+    }
     if (params.searchByCategory) {
-      productsQuery.andWhere('product.category_id = :categoryId', {
+      products.andWhere('category_id = :categoryId', {
         categoryId: params.searchByCategory,
       });
     }
 
-    const [result, total] = await productsQuery.getManyAndCount();
-
-    const productIds = result.map(product => product.id);
-    console.log(productIds);
-
-    const avgRatings = await this.productReviewRepository
-      .createQueryBuilder('reviews')
-      .select('reviews.product_id')
-      .addSelect('AVG(reviews.rating)', 'avgRating')
-      .where('reviews.product_id IN (:...productIds)', { productIds: productIds })
-      .groupBy('reviews.product_id')
-      .getRawMany();
-
-    
-      const resultWithAvgRating = result.map((product: Product) => {
-        const avgRating = avgRatings.find(rating => rating.product_id === product.id);
-        return {
-          ...product,
-          avgRating: avgRating ? avgRating.avgRating : 0,
-        } ;
-      });
+    const [_, total] = await products.getManyAndCount();
+    const result = await products.getRawMany();
+    console.log('result', result);
 
     const pageMetaDto = new PageMetaDto({
       pageOptionsDto: params,
       itemCount: total,
     });
 
-    return new ResponsePaginate(resultWithAvgRating, pageMetaDto, 'Success');
+    return new ResponsePaginate(result, pageMetaDto, 'Success');
   }
 
   async getProductDetail(id: number): Promise<ResponseItem<any>> {

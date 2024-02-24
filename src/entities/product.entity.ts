@@ -5,7 +5,7 @@ import { ProductReview } from './ProductReviews.entity';
 import { Category } from './category.entity';
 import { Shop } from './shop.entity';
 import { ProductDiscount } from './product_discount.entity';
-import { ProductImage } from './product_image.entity';
+// import { ProductImage } from './product_image.entity';
 
 @Entity('products')
 export class Product {
@@ -32,6 +32,8 @@ export class Product {
   @IsString()
   description: string;
 
+  @Column({ type: 'text', array: true, default: '{}' })
+  images: string[];
   @Column()
   @IsString()
   brand: string;
@@ -69,7 +71,4 @@ export class Product {
   @OneToMany(() => ProductDiscount, discount => discount.products)
   discounts: ProductDiscount[];
 
-  @OneToMany(() => ProductImage, productImage => productImage.products)
-  images:  ProductImage[];
-  totalRating: any;
 }
