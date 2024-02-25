@@ -1,6 +1,6 @@
 import { HttpException, HttpStatus, Injectable, InternalServerErrorException, NotFoundException, Query } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, getConnection } from 'typeorm';
 import { addProductDto } from './dto/add-product.dto';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { Product } from 'src/entities/product.entity';
@@ -10,23 +10,33 @@ import { PageMetaDto } from 'src/common/dtos/pageMeta';
 import { ResponsePaginate } from 'src/common/dtos/responsePaginate';
 import { log } from 'console';
 import { ResponseItem } from 'src/common/dtos/responseItem';
-
+import { loginUserDto } from '../auth/dto/login.dto';
+import { Category } from 'src/entities/category.entity';
+// import { ProductImage } from 'src/entities/product_image.entity';
+import { ProductReview } from 'src/entities/ProductReviews.entity';
 
 @Injectable()
 export class ProductService {
   constructor(
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
+    @InjectRepository(Category)
+    private readonly categoryRepository: Repository<Category>,
+    // @InjectRepository(ProductImage)
+    // private readonly productImageRepository: Repository<ProductImage>,
+    @InjectRepository(ProductReview)
+    private readonly productReviewRepository: Repository<ProductReview>,
     private readonly cloudinaryService: CloudinaryService,
   ) { }
 
-  async addNewProduct(addProductData: addProductDto, image: Express.Multer.File): Promise<{ status: string; message: string; data: Product }> {
+  async addNewProduct(addProductData: addProductDto, files: Array<Express.Multer.File>): Promise<{ status: string; message: string; data: Product }> {
     try {
-      const cloudinaryResult = await this.cloudinaryService.uploadImage(image, 'product');
-      const imageUrl = cloudinaryResult.secure_url;
+    const cloudinaryResult = await this.cloudinaryService.uploadImages(files, 'product');
+    const secureUrls = cloudinaryResult.map(item => item.secure_url);
       const newProduct = this.productRepository.create({
         product_name: addProductData.product_name,
         price: addProductData.price,
+        images:secureUrls,
         status: StatusEnum.ACTIVE,
         description: addProductData.description,
         brand: addProductData.brand,
@@ -46,6 +56,8 @@ export class ProductService {
       );
     }
   }
+
+
 
   async getAllproduct(params: GetProductParams) {
     const page = params.page || 1;
@@ -95,33 +107,44 @@ export class ProductService {
 
   async getProductDetail(id: number): Promise<ResponseItem<any>> {
     try {
-      const product = await this.productRepository
+      const productDetail = await this.productRepository
         .createQueryBuilder('product')
-        .leftJoinAndSelect('product.shop', 'shop') 
-        .select([
-          'product.id',
-          'product.product_name',
-          'product.image',
-          'product.price',
-          'product.status',
-          'product.description',
-          'product.brand',
-          'product.quantity_sold',
-          'product.quantity_inventory',
-          'product.created_at',
-          'shop.id AS shop_id',
-          'shop.shop_name' 
-        ])
+        .leftJoin('product.shop', 'shop')
+        .addSelect(['shop.id', 'shop.shop_name', 'shop.shop_phone', 'shop.shop_email', 'shop.shop_address', 'shop.shop_image', 'shop.shop_description'])
+        .leftJoin('product.discounts', 'discount', 'discount.status = :status', { status: 'active' })
+        .addSelect(['discount.id', 'discount.minQuantity', 'discount.discountPercentage'])
+        .leftJoin('product.reviews', 'reviews')
+        .addSelect(['reviews.id', 'reviews.rating', 'reviews.comment', 'reviews.created_at'])
+        .leftJoin('reviews.users', 'users')
+        .addSelect(['users.id', 'users.username', 'users.email', 'users.image'])
         .where('product.id = :id', { id })
-        .andWhere('product.delete_At IS NULL')
-        .getRawOne();
-      if (!product) {
+        .getOne();
+
+      if (!productDetail) {
         throw new NotFoundException('Product not found');
       }
-      return new ResponseItem(product, 'Successfully!');
+
+      let totalRating = 0;
+      productDetail.reviews.forEach(review => {
+        totalRating += review.rating;
+      });
+      const avgRating = ((totalRating / productDetail.reviews.length) || 0).toFixed(0);
+      const discountsWithPrice = productDetail.discounts.map(discount => {
+        const discountPrice = (productDetail.price - (productDetail.price * parseFloat(discount.discountPercentage) / 100));
+        return { ...discount, discountPrice };
+      });
+
+      const responseData = {
+        ...productDetail,
+        avgrating: avgRating,
+        discounts: discountsWithPrice
+      };
+
+      return new ResponseItem(responseData, 'Successfully!');
     } catch (error) {
       throw new NotFoundException('Product not found');
     }
   }
-  
+
+
 }

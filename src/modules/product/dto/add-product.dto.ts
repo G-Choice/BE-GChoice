@@ -10,11 +10,7 @@ export class addProductDto{
     @IsNotEmpty()
     product_name: string;
 
-    @ApiProperty({
-        description: "Product's image",
-        example: 'image',
-    })
-  
+   
     @ApiProperty({
         description: "Product's price",
         example: 'price',
