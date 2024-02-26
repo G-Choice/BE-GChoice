@@ -5,7 +5,7 @@ import { ProductReview } from './ProductReviews.entity';
 import { Category } from './category.entity';
 import { Shop } from './shop.entity';
 import { ProductDiscount } from './product_discount.entity';
-// import { ProductImage } from './product_image.entity';
+import { Group } from './group.entity';
 
 @Entity('products')
 export class Product {
@@ -70,5 +70,8 @@ export class Product {
 
   @OneToMany(() => ProductDiscount, discount => discount.products)
   discounts: ProductDiscount[];
+
+  @OneToMany(() =>  Group,  group => group.products)
+  groups: Group[];
 
 }

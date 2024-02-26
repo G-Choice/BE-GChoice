@@ -1,9 +1,10 @@
 import { IsBoolean, IsEmail, IsNotEmpty, IsNumber, IsOptional, IsPhoneNumber, IsString } from 'class-validator';
 import { PositionEnum ,StatusEnum } from 'src/common/enum/enums';
-import { PrimaryGeneratedColumn, Column, Entity, CreateDateColumn, OneToMany } from 'typeorm';
+import { PrimaryGeneratedColumn, Column, Entity, CreateDateColumn, OneToMany, ManyToMany, JoinTable } from 'typeorm';
 import { Shop } from './shop.entity';
 import { ProductReview } from './ProductReviews.entity';
- 
+import { Group } from './group.entity';
+
 @Entity('users')
 export class User {
   
@@ -44,7 +45,7 @@ export class User {
   @Column( {type: 'enum',
   enum: StatusEnum,
   default: StatusEnum.ACTIVE})
-  status: string;
+  status: string;x
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   @IsOptional()
@@ -61,4 +62,19 @@ export class User {
 
   @OneToMany(() => ProductReview , (productReviews) => productReviews.users)
   productReviews:  ProductReview [];
+
+  @ManyToMany(() =>Group,group =>group.users)
+  @JoinTable({
+    name: "user_group", // table name for the junction table of this relation
+    joinColumn: {
+        name: "user_id",
+        referencedColumnName: "id"
+    },
+    inverseJoinColumn: {
+        name: "group_id",
+        referencedColumnName: "id"
+    }
+})
+  groups:  Group [];
+  
 } 
