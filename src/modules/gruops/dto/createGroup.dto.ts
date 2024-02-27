@@ -34,13 +34,18 @@ export class createGroupDto {
         description: 'Duration of the group in hours.',
         example: 8
     })
+    @ApiProperty({
+        description: 'Duration of the group in hours.',
+        example: 8
+    })
     @IsNotEmpty()
     @IsNumber()
-    hours: number
-    
+    hours: number;
 
+    @ApiProperty({
+        description: 'Product ID.',
+        example: 123
+    })
     @IsNumber()
     productId: number;
-
-
 }

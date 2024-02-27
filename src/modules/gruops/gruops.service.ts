@@ -25,8 +25,8 @@ export class GruopsService {
     private readonly productRepository: Repository<Product>,
 
   ) { }
-  async createGroups(data: createGroupDto,@CurrentUser() user: User): Promise<any> {
-    const existingUser = await this.userRepository.findOne({ where: { id: user.id} });
+  async createGroups(data: createGroupDto, @CurrentUser() user: User): Promise<any> {
+    const existingUser = await this.userRepository.findOne({ where: { id: user.id } });
     if (!existingUser) {
       throw new Error('User does not exist.');
     }
@@ -34,7 +34,7 @@ export class GruopsService {
       .createQueryBuilder('user_group')
       .innerJoin('user_group.groups', 'groups')
       .where('groups.product_id = :productId', { productId: data.productId })
-      .andWhere('user_group.user_id = :userId', { userId: user.id})
+      .andWhere('user_group.user_id = :userId', { userId: user.id })
       .where('user_group.role = :role', { role: PositionGroupEnum.LEADER })
       .getCount();
 
@@ -53,7 +53,7 @@ export class GruopsService {
 
       const savedGroup = await this.groupRepository.save(newGroup);
       const newUserGroup = this.usergroupRepository.create({
-        user_id:  user.id,
+        user_id: user.id,
         group_id: savedGroup.id,
         role: PositionGroupEnum.LEADER
       });
