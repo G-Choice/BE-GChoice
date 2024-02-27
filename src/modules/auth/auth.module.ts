@@ -7,6 +7,7 @@ import { EmailService } from '../email/email.service';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
+import { ConfigModule } from '@nestjs/config';
 // import { JwtStrategy } from './jwt.strategy';
 
 @Module({
@@ -26,10 +27,13 @@ import { PassportModule } from '@nestjs/passport';
       },
     }),
     JwtModule.register({
-      secret: '123456789s',
-      signOptions: { expiresIn: '3600s' },
+      global:true,
+      secret:'123456',
+      signOptions:{expiresIn:14400}
     }),
+    ConfigModule
   ],
+
   controllers: [AuthController],
   providers: [AuthService, EmailService],
 })
