@@ -1,9 +1,9 @@
 import { IsNotEmpty } from "class-validator";
-import { Column, DeleteDateColumn, Entity, JoinColumn, JoinTable, ManyToMany, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, JoinColumn, JoinTable, ManyToMany, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { Product } from "./product.entity";
 import { User } from "./User.entity";
 
-@Entity('group')
+@Entity('groups')
 export class Group {
 
     @PrimaryGeneratedColumn()
@@ -17,7 +17,7 @@ export class Group {
     @IsNotEmpty()
     description: string;
 
-    @Column({ type: 'varchar' })
+    @Column({ type: 'varchar' ,nullable: true })
     @IsNotEmpty()
     image: string;
 
@@ -29,14 +29,27 @@ export class Group {
     @IsNotEmpty()
     groupTime: Date;
 
-    @DeleteDateColumn({ nullable: true , default: () => 'CURRENT_TIMESTAMP' })
+    @CreateDateColumn({ nullable: true , default: () => 'CURRENT_TIMESTAMP' })
     create_At: Date;
    
   @ManyToOne(() => Product, product => product.groups)
   @JoinColumn({ name: 'product_id' })
   products: Product;
 
-  @ManyToMany(() =>User,user =>user.groups,{ cascade: true })
-  users:  User [];
-  
+  @ManyToMany(
+    () => User , 
+    user  => user.groups, //optional
+    {onDelete: 'NO ACTION', onUpdate: 'NO ACTION'})
+    @JoinTable({
+      name: 'user_group',
+      joinColumn: {
+        name: 'group_id',
+        referencedColumnName: 'id',
+      },
+      inverseJoinColumn: {
+        name: 'user_id',
+        referencedColumnName: 'id',
+      },
+    })
+    users?: User[];
 }

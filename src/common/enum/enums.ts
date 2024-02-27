@@ -9,6 +9,10 @@ export enum  PositionEnum {
   USER = 'user',
   SELLER= 'seller',
 }
+export enum  PositionGroupEnum {
+  LEADER = 'leader',
+  MEMBER = 'member',
+}
 
 
 export enum Order {

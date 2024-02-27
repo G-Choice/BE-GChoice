@@ -1,6 +1,6 @@
 import { HttpException, HttpStatus, Injectable, InternalServerErrorException, NotFoundException, Query } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, getConnection } from 'typeorm';
+import { Repository,} from 'typeorm';
 import { addProductDto } from './dto/add-product.dto';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { Product } from 'src/entities/product.entity';

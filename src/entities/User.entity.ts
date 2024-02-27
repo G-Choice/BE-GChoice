@@ -4,6 +4,7 @@ import { PrimaryGeneratedColumn, Column, Entity, CreateDateColumn, OneToMany, Ma
 import { Shop } from './shop.entity';
 import { ProductReview } from './ProductReviews.entity';
 import { Group } from './group.entity';
+// import { User_group } from './user_group.entity';
 
 @Entity('users')
 export class User {
@@ -45,7 +46,7 @@ export class User {
   @Column( {type: 'enum',
   enum: StatusEnum,
   default: StatusEnum.ACTIVE})
-  status: string;x
+  status: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   @IsOptional()
@@ -63,18 +64,12 @@ export class User {
   @OneToMany(() => ProductReview , (productReviews) => productReviews.users)
   productReviews:  ProductReview [];
 
-  @ManyToMany(() =>Group,group =>group.users)
-  @JoinTable({
-    name: "user_group", // table name for the junction table of this relation
-    joinColumn: {
-        name: "user_id",
-        referencedColumnName: "id"
-    },
-    inverseJoinColumn: {
-        name: "group_id",
-        referencedColumnName: "id"
-    }
-})
-  groups:  Group [];
+  
+  @ManyToMany(
+    () => Group,
+    group => group.users,
+    {onDelete: 'NO ACTION', onUpdate: 'NO ACTION',},
+  )
+  groups?: Group[];
   
 } 

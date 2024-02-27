@@ -1,5 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { IsNotEmpty, IsNumber, IsString } from "class-validator";
+import { Product } from "src/entities/product.entity";
 
 export class createGroupDto {
 
@@ -35,6 +36,11 @@ export class createGroupDto {
     })
     @IsNotEmpty()
     @IsNumber()
-    hours: number;
+    hours: number
     
+
+    @IsNumber()
+    productId: number;
+
+
 }

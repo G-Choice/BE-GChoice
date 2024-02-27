@@ -1,0 +1,38 @@
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryColumn, PrimaryGeneratedColumn } from "typeorm";
+import { User } from "./User.entity";
+import { Group } from "./group.entity";
+import { PositionGroupEnum } from "src/common/enum/enums";
+
+@Entity('user_group')
+export class User_group {
+
+  @PrimaryGeneratedColumn()
+  id: number;
+  @PrimaryColumn()
+  group_id: number;
+
+  @PrimaryColumn()
+  user_id: number;
+  @Column({
+    type: 'enum',
+    enum: PositionGroupEnum,
+    default: PositionGroupEnum.MEMBER
+  })
+  role: string;
+
+  @ManyToOne(
+    () => User,
+    user => user.groups,
+    {onDelete: 'NO ACTION', onUpdate: 'NO ACTION'}
+  )
+  @JoinColumn([{ name: 'user_id', referencedColumnName: 'id' }])
+  users: User[];
+
+  @ManyToOne(
+    () => Group,
+    group => group.users,
+    {onDelete: 'NO ACTION', onUpdate: 'NO ACTION'}
+  )
+  @JoinColumn([{ name: 'group_id', referencedColumnName: 'id' }])
+  groups: Group[];
+}
