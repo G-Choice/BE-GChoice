@@ -71,9 +71,11 @@ export class GruopsService {
       const savedGroup = await this.groupRepository.save(newGroup);
     
       const newCart = new Carts();
+      newCart.total_price = 0;
+      newCart.total_quantity = data.quantity_product;
       newCart.groups = savedGroup; 
       await this.cartsRepository.save(newCart);
-
+      
       const newUserGroup = this.usergroupRepository.create({
         user_id: user.id,
         group_id: savedGroup.id,
