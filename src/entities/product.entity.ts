@@ -6,6 +6,7 @@ import { Category } from './category.entity';
 import { Shop } from './shop.entity';
 import { ProductDiscount } from './product_discount.entity';
 import { Group } from './group.entity';
+import { Carts } from './cart.entity';
 
 @Entity('products')
 export class Product {
@@ -13,7 +14,7 @@ export class Product {
   id: number;
 
   @Column()
-  @IsString()
+  @IsString() 
   @IsNotEmpty()
   product_name: string;
 
@@ -73,5 +74,8 @@ export class Product {
 
   @OneToMany(() =>  Group,  group => group.products)
   groups: Group[];
+
+  // @OneToMany(() => Carts, carts => carts.products)
+  // carts: Carts[];
 
 }

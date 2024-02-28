@@ -4,7 +4,7 @@ export class ResponseItem<T> {
   @IsArray()
   readonly data: T[] | T;
 
-  readonly message: string;
+  readonly message: string;z
 
   constructor(data: T[] | T, message: string) {
     this.data = data;
