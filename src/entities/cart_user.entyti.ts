@@ -16,6 +16,12 @@ export class Cart_user {
     @PrimaryColumn()
     user_id: number;
 
+    @Column()
+    quantity: number;
+
+    @Column({default: 0})
+    price: number;
+
     @ManyToOne(
         () => User,
         user => user.cart_users,

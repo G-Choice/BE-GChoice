@@ -26,7 +26,7 @@ export class Group {
     @Column({ type: 'integer' }) 
     groupSize: number;
 
-    @Column({ type: 'timestamp'}) // Sử dụng kiểu timestamp cho groupTime
+    @Column({ type: 'timestamp'})
     @IsNotEmpty()
     groupTime: Date;
 
@@ -35,9 +35,11 @@ export class Group {
    
   @ManyToOne(() => Product, product => product.groups)
   @JoinColumn({ name: 'product_id' })
-  carts:Carts
+  products:Product;
 
-
+  
+  @OneToOne(() =>  Carts, ( carts) =>  carts.groups)
+  carts:Carts;
 
   @ManyToMany(
     () => User , 

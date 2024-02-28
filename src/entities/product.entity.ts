@@ -14,7 +14,7 @@ export class Product {
   id: number;
 
   @Column()
-  @IsString()
+  @IsString() 
   @IsNotEmpty()
   product_name: string;
 
@@ -75,7 +75,7 @@ export class Product {
   @OneToMany(() =>  Group,  group => group.products)
   groups: Group[];
 
-  @OneToMany(() => Carts, carts => carts.products)
-  carts: Carts[];
+  // @OneToMany(() => Carts, carts => carts.products)
+  // carts: Carts[];
 
 }

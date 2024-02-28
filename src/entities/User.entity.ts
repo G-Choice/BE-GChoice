@@ -5,7 +5,7 @@ import { Shop } from './shop.entity';
 import { ProductReview } from './ProductReviews.entity';
 import { Group } from './group.entity';
 import { Cart_user } from './cart_user.entyti';
-// import { User_group } from './user_group.entity';
+import { User_group } from './user_group.entity';
 
 @Entity('users')
 export class User {

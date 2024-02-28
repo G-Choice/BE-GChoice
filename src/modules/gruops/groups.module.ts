@@ -6,11 +6,13 @@ import { GruopsController } from './groups.controller';
 import { GruopsService } from './groups.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Group } from 'src/entities/group.entity';
+import { Carts } from 'src/entities/cart.entity';
+import { Cart_user } from 'src/entities/cart_user.entyti';
 
 
 @Module({
     imports: [
-      TypeOrmModule.forFeature([Product,User_group,User,Group]),
+      TypeOrmModule.forFeature([Product,User_group,User,Group,Carts,Cart_user]),
     ],
     controllers:[GruopsController],
     providers: [GruopsService],

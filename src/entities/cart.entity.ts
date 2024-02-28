@@ -9,20 +9,15 @@ export class Carts {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column()
+    @Column({default:0})
     total_price: number;
 
-    @Column()
+    @Column({default:0})
     total_quantity: number;
 
-    @ManyToOne(()=>Product ,product => product.carts)
-    @JoinColumn({name:'product_id'})
-    products: Product;
-
-    // @OneToOne(() => Group => )
-    // @JoinColumn({name:'group_id'})
-    // groups: Group
-
+    // @ManyToOne(()=>Product ,product => product.carts)
+    // @JoinColumn({name:'product_id'})
+    // products: Product;
 
     @OneToOne(() => Group, (group) => group.carts)
     @JoinColumn({name:'group_id'}) 
