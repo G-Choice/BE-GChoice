@@ -45,7 +45,7 @@ export class GruopsService {
   async createGroups(data: createGroupDto, @CurrentUser() user: User): Promise<any> {
     const existingUser = await this.userRepository.findOne({ where: { id: user.id } });
     if (!existingUser) {
-      throw new Error('User does not exist.');
+      throw new NotFoundException('User does not exist.');
     }
     const exitingGroup = await this.usergroupRepository
       .createQueryBuilder('user_group')
@@ -69,6 +69,11 @@ export class GruopsService {
       });
 
       const savedGroup = await this.groupRepository.save(newGroup);
+    
+      const newCart = new Carts();
+      newCart.groups = savedGroup; 
+      await this.cartsRepository.save(newCart);
+
       const newUserGroup = this.usergroupRepository.create({
         user_id: user.id,
         group_id: savedGroup.id,

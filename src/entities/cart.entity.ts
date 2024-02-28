@@ -19,7 +19,7 @@ export class Carts {
     // @JoinColumn({name:'product_id'})
     // products: Product;
 
-    @OneToOne(() => Group, (group) => group.carts)
+    @OneToOne(() => Group, (group) => group.carts ,{cascade: true})
     @JoinColumn({name:'group_id'}) 
     groups: Group
 
