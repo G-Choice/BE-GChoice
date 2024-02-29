@@ -13,6 +13,8 @@ import { ResponseItem } from 'src/common/dtos/responseItem';
 import { JoinGroupDto } from './dto/join_group.dto';
 import { Carts } from 'src/entities/cart.entity';
 import { Cart_user } from 'src/entities/cart_user.entyti';
+import { ProductDiscount } from 'src/entities/product_discount.entity';
+import { log } from 'console';
 
 @Injectable()
 export class GruopsService {
@@ -27,18 +29,20 @@ export class GruopsService {
     private readonly productRepository: Repository<Product>,
     @InjectRepository(Carts)
     private readonly cartsRepository: Repository<Carts>,
-    @InjectRepository( Cart_user )
-    private readonly  cart_userRepository: Repository< Cart_user >,
+    @InjectRepository(Cart_user)
+    private readonly cart_userRepository: Repository<Cart_user>,
+    @InjectRepository(ProductDiscount)
+    private readonly ProductDiscountRepository: Repository<ProductDiscount>,
   ) { }
 
-  async getAllGroups(@Body() product_id: number): Promise<any> {   
+  async getAllGroups(@Body() product_id: number): Promise<any> {
     const groupsByProductId = await this.groupRepository
       .createQueryBuilder('group')
       .leftJoin('group.carts', 'carts')
       .addSelect('carts.total_quantity')
       .where('group.product_id = :product_id', { product_id: product_id })
       .getMany();
-      return new ResponseItem(groupsByProductId , 'Successfully!');
+    return new ResponseItem(groupsByProductId, 'Successfully!');
   }
 
 
@@ -69,19 +73,49 @@ export class GruopsService {
       });
 
       const savedGroup = await this.groupRepository.save(newGroup);
-    
+
       const newCart = new Carts();
       newCart.total_price = 0;
       newCart.total_quantity = data.quantity_product;
-      newCart.groups = savedGroup; 
+      newCart.groups = savedGroup;
       await this.cartsRepository.save(newCart);
-      
+
       const newUserGroup = this.usergroupRepository.create({
         user_id: user.id,
         group_id: savedGroup.id,
         role: PositionGroupEnum.LEADER
       });
       await this.usergroupRepository.save(newUserGroup);
+      const product_discounts = await this.ProductDiscountRepository.find({
+        where: {
+          products: {
+            id: data.product_id
+          }
+        }
+      });
+      if (product_discounts && product_discounts.length > 0) {
+        product_discounts.sort((a, b) => b.minQuantity - a.minQuantity);
+        let discountPercentage = 0;
+        for (const discount of product_discounts) {
+          if (data.quantity_product >= discount.minQuantity) {
+            discountPercentage = parseFloat(discount.discountPercentage);
+            break;
+          }
+        }
+        const newCart_user = new Cart_user();
+        newCart_user.cart_id = newCart.id;
+        newCart_user.user_id = user.id;
+        newCart_user.quantity = data.quantity_product;
+        newCart_user.price = (product.price - (product.price * discountPercentage / 100))* data.quantity_product;
+        await this.cart_userRepository.save(newCart_user);
+      } else {
+        const newCart_user = new Cart_user();
+        newCart_user.cart_id = newCart.id;
+        newCart_user.user_id = user.id;
+        newCart_user.quantity = data.quantity_product;
+        newCart_user.price = product.price * data.quantity_product;
+        await this.cart_userRepository.save(newCart_user);
+      }
       return {
         message: 'Group created successfully!',
         data: savedGroup,
@@ -95,32 +129,63 @@ export class GruopsService {
     }
   }
 
-  async joinGroup(joinGroupDto: JoinGroupDto,  @CurrentUser() user: User): Promise<any> { 
-      const existingUserGroup = await this.usergroupRepository.findOne({ where: { group_id: joinGroupDto.group_id, user_id: user.id } });
-      if (existingUserGroup) {
-        throw new NotFoundException('User already joined this group');
+  async joinGroup(joinGroupDto: JoinGroupDto, @CurrentUser() user: User): Promise<any> {
+    const existingUserGroup = await this.usergroupRepository.findOne({ where: { group_id: joinGroupDto.group_id, user_id: user.id } });
+    if (existingUserGroup) {
+      throw new NotFoundException('User already joined this group');
+    }
+    const newUserGroup = new User_group();
+    newUserGroup.group_id = joinGroupDto.group_id;
+    newUserGroup.user_id = user.id;
+    newUserGroup.role = PositionGroupEnum.MEMBER;
+    await this.usergroupRepository.save(newUserGroup);
+    
+    const findCart = await this.cartsRepository.findOne({where: {groups: {id: joinGroupDto.group_id}}});
+    findCart.total_quantity += joinGroupDto.quantity_product;
+    await this.cartsRepository.save(findCart);
+   
+    const product = await this.productRepository.findOne({
+      where: {
+        groups: {
+          id:joinGroupDto.group_id
+        }
       }
-      const newUserGroup = new User_group();
-      newUserGroup.group_id = joinGroupDto.group_id;
-      newUserGroup.user_id = user.id;
-      newUserGroup.role = PositionGroupEnum.MEMBER; 
-      await this.usergroupRepository.save(newUserGroup);
-
-      const findCart = await this.cartsRepository.findOne({ where: { id: joinGroupDto.group_id } });
-     
-      // const newCart_User = this.cart_userRepository.create({
-      //   user_id: user.id,
-      //   group_id: joinGroupDto.group_id,
-      //   total_quantity: joinGroupDto.quantity_product,
-      // });
-      // await this.groupRepository.save(newCart);
-      // return {
-      //   message: 'Joined group successfully',
-      //   data: newCart,
-      // };
+    });  
+    const product_discounts = await this.ProductDiscountRepository.find({
+      where: {
+        products: {
+          id: product.id
+        }
+      }
+    });
+    if (product_discounts && product_discounts.length > 0) {
+      product_discounts.sort((a, b) => b.minQuantity - a.minQuantity);
+      let discountPercentage = 0;
+      for (const discount of product_discounts) {
+        if (findCart.total_quantity >= discount.minQuantity) {
+          discountPercentage = parseFloat(discount.discountPercentage);
+          break;
+        }
+      }
+      const newCart_user = new Cart_user();
+      newCart_user.cart_id = findCart.id;
+      newCart_user.user_id = user.id;
+      newCart_user.quantity = joinGroupDto.quantity_product;
+      newCart_user.price = (product.price - (product.price * discountPercentage / 100))* joinGroupDto.quantity_product;
+      await this.cart_userRepository.save(newCart_user);
+    } else {
+      const newCart_user = new Cart_user();
+      newCart_user.cart_id = findCart.id;
+      newCart_user.user_id = user.id;
+      newCart_user.quantity = joinGroupDto.quantity_product;
+      newCart_user.price = product.price * joinGroupDto.quantity_product;
+      await this.cart_userRepository.save(newCart_user);
+    }   
+    return {
+      message: 'Joined group successfully',
+      data: null,
+    };
   }
-  //     return { success: true, message: 'Joined group successfully' };
-  
-  }
+}
 
 

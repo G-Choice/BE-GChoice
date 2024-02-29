@@ -8,11 +8,12 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Group } from 'src/entities/group.entity';
 import { Carts } from 'src/entities/cart.entity';
 import { Cart_user } from 'src/entities/cart_user.entyti';
+import { ProductDiscount } from 'src/entities/product_discount.entity';
 
 
 @Module({
     imports: [
-      TypeOrmModule.forFeature([Product,User_group,User,Group,Carts,Cart_user]),
+      TypeOrmModule.forFeature([Product,User_group,User,Group,Carts,Cart_user,ProductDiscount]),
     ],
     controllers:[GruopsController],
     providers: [GruopsService],
