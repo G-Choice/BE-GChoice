@@ -17,6 +17,13 @@ export class GruopsController {
     }
 
 
+    @Get()
+    async getCartUsers(@Query('product_id') product_id: number): Promise<any>{
+        return this.groupsService.getAllGroups(product_id);
+    }
+
+
+
     @UseGuards(AuthGuard)
     @Post()
     async createGroups(@Body() data :createGroupDto , @CurrentUser() user: User): Promise<any>{

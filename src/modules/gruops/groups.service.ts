@@ -36,15 +36,26 @@ export class GruopsService {
   ) { }
 
   async getAllGroups(@Body() product_id: number): Promise<any> {
+    const currentTimestamp = new Date().getTime(); // Thời gian hiện tại
+  
     const groupsByProductId = await this.groupRepository
       .createQueryBuilder('group')
+      .addSelect('group.groupTime')
       .leftJoin('group.carts', 'carts')
       .addSelect('carts.total_quantity')
       .where('group.product_id = :product_id', { product_id: product_id })
-      .getMany();
-    return new ResponseItem(groupsByProductId, 'Successfully!');
+      .getMany();  
+    const groupsWithRemainingTime = groupsByProductId.map(group => {
+      const remainingTimeInMilliseconds = group.groupTime.getTime() - currentTimestamp;
+      const remainingHours = remainingTimeInMilliseconds / (1000 * 60 * 60); 
+      return {
+        ...group,
+        remainingHours: remainingHours
+      };
+    });
+  
+    return new ResponseItem(groupsWithRemainingTime, 'Successfully!');
   }
-
 
   async createGroups(data: createGroupDto, @CurrentUser() user: User): Promise<any> {
     const existingUser = await this.userRepository.findOne({ where: { id: user.id } });
