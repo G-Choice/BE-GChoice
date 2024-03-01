@@ -17,9 +17,9 @@ export class GruopsController {
     }
 
 
-    @Get()
-    async getCartUsers(@Query('product_id') product_id: number): Promise<any>{
-        return this.groupsService.getAllGroups(product_id);
+    @Get('cart_group')
+    async getCartUsers(@Query('group_id') group_id: number): Promise<any>{
+        return this.groupsService.getCartGroups(group_id);
     }
 
 
