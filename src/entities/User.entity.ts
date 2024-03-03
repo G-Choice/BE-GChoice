@@ -37,6 +37,11 @@ export class User {
   @IsOptional()
   image: string;
 
+  
+  @Column({ type: 'varchar', length: 255  ,nullable: true })
+  @IsOptional()
+  fcmToken: string;
+
   @Column({
     type: 'enum',
     enum: PositionEnum,

@@ -14,8 +14,8 @@ import { JoinGroupDto } from './dto/join_group.dto';
 import { Carts } from 'src/entities/cart.entity';
 import { Cart_user } from 'src/entities/cart_user.entyti';
 import { ProductDiscount } from 'src/entities/product_discount.entity';
-import { log } from 'console';
-
+import { FirebaseRepository } from 'src/firebase/firebase.service';
+import * as admin from 'firebase-admin';
 @Injectable()
 export class GruopsService {
   constructor(
@@ -33,6 +33,7 @@ export class GruopsService {
     private readonly cart_userRepository: Repository<Cart_user>,
     @InjectRepository(ProductDiscount)
     private readonly ProductDiscountRepository: Repository<ProductDiscount>,
+    private readonly firebaseRepository: FirebaseRepository
   ) { }
 
   async getAllGroups(@Body() product_id: number): Promise<any> {
@@ -219,6 +220,25 @@ export class GruopsService {
       message: 'Joined group successfully',
       data: null,
     };
+  }
+
+  async sendNotificationToToken() {
+    const token = 'fSdqVbBPR7CJJIQCVs-bs5:APA91bEZbUEw9RKld5LExYe9lSpVwd4eIyebSFQOVLzRsaWikT8pmz-xfGYsMXacaBTik-r5dijpk6Y9fS4jATMQ4eTPaXQkurxjy90gHNhPFHxpWqen-60qa3o-6w-I0tSaLI56NUd7';
+    const notification: admin.messaging.Notification = {
+      title: 'Your notification title',
+      body: 'Your notification body',
+    };
+    const data: admin.messaging.DataMessagePayload = {
+      // optional data payload
+      // add any custom data you want to send with your notification
+    };
+
+    try {
+      const response = await this.firebaseRepository.sendPushNotification(token, notification);
+      console.log('Push notification sent successfully:', response);
+    } catch (error) {
+      console.error('Failed to send push notification:', error);
+    }
   }
 }
 
