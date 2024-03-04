@@ -29,6 +29,7 @@ export class createGroupDto {
     @IsNotEmpty()
     @IsString()
     group_size: number;
+
     
     @ApiProperty({
         description: 'Duration of the group in hours.',
@@ -47,6 +48,7 @@ export class createGroupDto {
         example: 123
     })
     @IsNumber()
+
     product_id: number;
 
     @ApiProperty({
@@ -55,5 +57,6 @@ export class createGroupDto {
     })
     @IsNumber()
     quantity_product: number;
+
 
 }

@@ -14,6 +14,7 @@ export class User_group {
   @PrimaryColumn()
   user_id: number;
 
+
   @Column({default:null})
   role: string;
 
