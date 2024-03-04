@@ -111,8 +111,6 @@ export class AuthService {
   async login(loginUserDto: loginUserDto): Promise<any> {
     const {email, password} = loginUserDto;
     const user = await this.UserRepository.findOne({where: {email:email}})
-    console.log( user);
-    
     if (!user) {
       throw new HttpException('User does not exist', HttpStatus.UNAUTHORIZED);
     }

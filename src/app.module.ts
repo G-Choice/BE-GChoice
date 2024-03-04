@@ -7,7 +7,8 @@ import { CloudinaryModule } from './modules/cloudinary/cloudinary.module';
 import { ProductModule } from './modules/product/product.module';
 import { AppController } from './app.controller';
 import { ProductDiscountModule } from './modules/product-discount/product-discount.module';
-import { GruopsModule } from './modules/gruops/gruops.module';
+import { GruopsModule } from './modules/gruops/groups.module';
+
 
 
 

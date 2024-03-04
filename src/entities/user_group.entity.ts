@@ -13,11 +13,9 @@ export class User_group {
 
   @PrimaryColumn()
   user_id: number;
-  @Column({
-    type: 'enum',
-    enum: PositionGroupEnum,
-    default: PositionGroupEnum.MEMBER
-  })
+
+
+  @Column({default:null})
   role: string;
 
   @ManyToOne(

@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, BaseEntity, BeforeInsert, BeforeUpdate, ManyToOne, JoinColumn } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, BaseEntity, BeforeInsert, BeforeUpdate, ManyToOne, JoinColumn, CreateDateColumn } from "typeorm";
 import { IsInt, Min, Max, IsDecimal, MinLength, MaxLength, IsNotEmpty } from "class-validator";
 import { Product } from './product.entity';
 import { User } from "./User.entity";
@@ -17,8 +17,8 @@ export class ProductReview extends BaseEntity {
     @Column({ type: "text" })
     @IsNotEmpty({ message: 'Comment cannot be empty' })
     comment: string;
-
-    @Column({ type: "timestamp" })
+    
+    @CreateDateColumn({type:"timestamp"})
     created_at: Date;
     
   @ManyToOne(() => Product, product => product.reviews)
