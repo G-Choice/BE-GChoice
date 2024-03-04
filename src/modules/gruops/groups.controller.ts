@@ -10,10 +10,10 @@ import { JoinGroupDto } from './dto/join_group.dto';
 export class GruopsController {
     constructor(private groupsService:  GruopsService ) { }
 
-
+    @UseGuards(AuthGuard)
     @Get()
-    async getAllGroups(@Query('product_id') product_id: number): Promise<any>{
-        return this.groupsService.getAllGroups(product_id);
+    async getAllGroups(@Query('product_id') product_id: number,@CurrentUser() user: User): Promise<any>{
+        return this.groupsService.getAllGroups(product_id,user);
     }
 
 
