@@ -35,27 +35,68 @@ export class GruopsService {
     private readonly ProductDiscountRepository: Repository<ProductDiscount>,
   ) { }
 
-  async getAllGroups(@Body() product_id: number): Promise<any> {
-    const currentTimestamp = new Date().getTime(); // Thời gian hiện tại
-  
+
+  async getAllGroups(@Body() product_id: number, @CurrentUser() user: User): Promise<any> {
+    const currentTimestamp = new Date().getTime();
+
     const groupsByProductId = await this.groupRepository
       .createQueryBuilder('group')
       .addSelect('group.groupTime')
       .leftJoin('group.carts', 'carts')
       .addSelect('carts.total_quantity')
+
+      .leftJoin('group.users', 'users', 'users.id = :userId', { userId: user.id }) 
+      .addSelect('users.id')
       .where('group.product_id = :product_id', { product_id: product_id })
-      .getMany();  
+      .getMany();
+    
     const groupsWithRemainingTime = groupsByProductId.map(group => {
       const remainingTimeInMilliseconds = group.groupTime.getTime() - currentTimestamp;
-      const remainingHours = remainingTimeInMilliseconds / (1000 * 60 * 60); 
+      let remainingHours = remainingTimeInMilliseconds / (1000 * 60 * 60);
+      
+      if (remainingHours < 0) {
+        remainingHours = 0;
+      }
+      
+      const isJoined = group.users.length > 0;   
       return {
         ...group,
-        remainingHours: remainingHours
+        remainingHours: remainingHours,
+        isJoined: isJoined
+
       };
     });
   
     return new ResponseItem(groupsWithRemainingTime, 'Successfully!');
+
+
+async getCartGroups(group_id: number): Promise<any> {
+  const currentTimestamp = new Date().getTime();
+  
+  const findCart = await this.cartsRepository.findOne({ where: { groups: { id: group_id } } });
+  const productByGroup = await this.productRepository.findOne({ where: { groups: { id: group_id } } });
+  const group = await this.groupRepository.findOne({ where: { id: group_id } });
+  let remainingHours = (group.groupTime.getTime() - currentTimestamp) / (1000 * 60 * 60);
+  if (remainingHours < 0) {
+      remainingHours = 0;
   }
+
+  const cartGroups = await this.cart_userRepository
+      .createQueryBuilder('cart_user')
+      .leftJoin('cart_user.users', 'users')
+      .addSelect(['users.id', 'users.username', 'users.email', 'users.image', 'users.address'])
+      .where('cart_user.cart_id = :cartId', { cartId: findCart.id })
+      .getMany();
+  const totalPrice = cartGroups.reduce((total, group) => total + group.price, 0);
+
+  return {
+      data: cartGroups,
+      totalPrice,
+      remainingHours,
+      productByGroup,
+      message: 'Successfully!'
+  };
+}
 
   async createGroups(data: createGroupDto, @CurrentUser() user: User): Promise<any> {
     const existingUser = await this.userRepository.findOne({ where: { id: user.id } });
@@ -117,7 +158,8 @@ export class GruopsService {
         newCart_user.cart_id = newCart.id;
         newCart_user.user_id = user.id;
         newCart_user.quantity = data.quantity_product;
-        newCart_user.price = (product.price - (product.price * discountPercentage / 100))* data.quantity_product;
+        newCart_user.price = (product.price - (product.price * discountPercentage / 100)) * data.quantity_product;
+
         await this.cart_userRepository.save(newCart_user);
 
 
@@ -152,18 +194,20 @@ export class GruopsService {
     newUserGroup.user_id = user.id;
     newUserGroup.role = PositionGroupEnum.MEMBER;
     await this.usergroupRepository.save(newUserGroup);
-    
-    const findCart = await this.cartsRepository.findOne({where: {groups: {id: joinGroupDto.group_id}}});
+
+
+    const findCart = await this.cartsRepository.findOne({ where: { groups: { id: joinGroupDto.group_id } } });
     findCart.total_quantity += joinGroupDto.quantity_product;
     await this.cartsRepository.save(findCart);
-   
+
     const product = await this.productRepository.findOne({
       where: {
         groups: {
-          id:joinGroupDto.group_id
+          id: joinGroupDto.group_id
         }
       }
-    });  
+    });
+
     const product_discounts = await this.ProductDiscountRepository.find({
       where: {
         products: {
@@ -184,14 +228,15 @@ export class GruopsService {
       newCart_user.cart_id = findCart.id;
       newCart_user.user_id = user.id;
       newCart_user.quantity = joinGroupDto.quantity_product;
-      newCart_user.price = (product.price - (product.price * discountPercentage / 100))* joinGroupDto.quantity_product;
+      newCart_user.price = (product.price - (product.price * discountPercentage / 100)) * joinGroupDto.quantity_product;
       await this.cart_userRepository.save(newCart_user);
 
-      const cart_users = await this.cart_userRepository.find({where: {cart_id:findCart.id}})
-       for (const cart_user of cart_users) {
-            cart_user.price = (product.price - (product.price * discountPercentage / 100)) * cart_user.quantity;
-            await this.cart_userRepository.save(cart_user);
-        }
+      const cart_users = await this.cart_userRepository.find({ where: { cart_id: findCart.id } })
+      for (const cart_user of cart_users) {
+        cart_user.price = (product.price - (product.price * discountPercentage / 100)) * cart_user.quantity;
+        await this.cart_userRepository.save(cart_user);
+      }
+
     } else {
       const newCart_user = new Cart_user();
       newCart_user.cart_id = findCart.id;
@@ -199,7 +244,8 @@ export class GruopsService {
       newCart_user.quantity = joinGroupDto.quantity_product;
       newCart_user.price = product.price * joinGroupDto.quantity_product;
       await this.cart_userRepository.save(newCart_user);
-    }   
+    }
+
     return {
       message: 'Joined group successfully',
       data: null,

@@ -26,6 +26,7 @@ export class Group {
     @Column({ type: 'integer' }) 
     groupSize: number;
 
+
     @Column({ type: 'timestamp'}) // Sử dụng kiểu timestamp cho groupTime
     @IsNotEmpty()
     groupTime: Date;

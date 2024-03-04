@@ -7,7 +7,6 @@ import { Group } from './group.entity';
 import { Cart_user } from './cart_user.entyti';
 import { User_group } from './user_group.entity';
 
-
 @Entity('users')
 export class User {
   

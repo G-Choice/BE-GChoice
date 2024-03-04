@@ -20,6 +20,7 @@ export class Cart_user {
     quantity: number;
 
     @Column({ default: 0 })
+
     price: number;
 
     @ManyToOne(
