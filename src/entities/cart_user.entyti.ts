@@ -19,9 +19,12 @@ export class Cart_user {
     @Column()
     quantity: number;
 
-    @Column({default: 0})
+    @Column({ default: 0 })
     price: number;
 
+
+    @Column({ default: false })
+    isJoined: boolean;
     @ManyToOne(
         () => User,
         user => user.cart_users,

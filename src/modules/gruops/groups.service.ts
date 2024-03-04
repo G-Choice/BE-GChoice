@@ -118,6 +118,7 @@ export class GruopsService {
         newCart_user.user_id = user.id;
         newCart_user.quantity = data.quantity_product;
         newCart_user.price = (product.price - (product.price * discountPercentage / 100))* data.quantity_product;
+        newCart_user.isJoined = true,
         await this.cart_userRepository.save(newCart_user);
 
 
@@ -127,6 +128,7 @@ export class GruopsService {
         newCart_user.user_id = user.id;
         newCart_user.quantity = data.quantity_product;
         newCart_user.price = product.price * data.quantity_product;
+        newCart_user.isJoined = true,
         await this.cart_userRepository.save(newCart_user);
       }
       return {
@@ -185,6 +187,7 @@ export class GruopsService {
       newCart_user.user_id = user.id;
       newCart_user.quantity = joinGroupDto.quantity_product;
       newCart_user.price = (product.price - (product.price * discountPercentage / 100))* joinGroupDto.quantity_product;
+      newCart_user.isJoined = true,
       await this.cart_userRepository.save(newCart_user);
 
       const cart_users = await this.cart_userRepository.find({where: {cart_id:findCart.id}})
@@ -198,6 +201,7 @@ export class GruopsService {
       newCart_user.user_id = user.id;
       newCart_user.quantity = joinGroupDto.quantity_product;
       newCart_user.price = product.price * joinGroupDto.quantity_product;
+      newCart_user.isJoined = true,
       await this.cart_userRepository.save(newCart_user);
     }   
     return {
