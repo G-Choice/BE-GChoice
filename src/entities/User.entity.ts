@@ -72,7 +72,9 @@ export class User {
     {onDelete: 'NO ACTION', onUpdate: 'NO ACTION',},
   )
   groups?: Group[];
+
   @OneToMany(() => Cart_user, cart_user => cart_user.users)
   cart_users: Cart_user[];
+
   
 } 

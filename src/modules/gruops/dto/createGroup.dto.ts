@@ -47,6 +47,7 @@ export class createGroupDto {
         example: 123
     })
     @IsNumber()
+
     product_id: number;
 
     @ApiProperty({

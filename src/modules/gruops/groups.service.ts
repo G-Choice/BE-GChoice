@@ -35,13 +35,16 @@ export class GruopsService {
     private readonly ProductDiscountRepository: Repository<ProductDiscount>,
   ) { }
 
+
   async getAllGroups(@Body() product_id: number, @CurrentUser() user: User): Promise<any> {
     const currentTimestamp = new Date().getTime();
+
     const groupsByProductId = await this.groupRepository
       .createQueryBuilder('group')
       .addSelect('group.groupTime')
       .leftJoin('group.carts', 'carts')
       .addSelect('carts.total_quantity')
+
       .leftJoin('group.users', 'users', 'users.id = :userId', { userId: user.id }) 
       .addSelect('users.id')
       .where('group.product_id = :product_id', { product_id: product_id })
@@ -60,11 +63,12 @@ export class GruopsService {
         ...group,
         remainingHours: remainingHours,
         isJoined: isJoined
+
       };
     });
   
     return new ResponseItem(groupsWithRemainingTime, 'Successfully!');
-}
+
 
 async getCartGroups(group_id: number): Promise<any> {
   const currentTimestamp = new Date().getTime();
@@ -155,6 +159,7 @@ async getCartGroups(group_id: number): Promise<any> {
         newCart_user.user_id = user.id;
         newCart_user.quantity = data.quantity_product;
         newCart_user.price = (product.price - (product.price * discountPercentage / 100)) * data.quantity_product;
+
         await this.cart_userRepository.save(newCart_user);
 
 
@@ -190,6 +195,7 @@ async getCartGroups(group_id: number): Promise<any> {
     newUserGroup.role = PositionGroupEnum.MEMBER;
     await this.usergroupRepository.save(newUserGroup);
 
+
     const findCart = await this.cartsRepository.findOne({ where: { groups: { id: joinGroupDto.group_id } } });
     findCart.total_quantity += joinGroupDto.quantity_product;
     await this.cartsRepository.save(findCart);
@@ -201,6 +207,7 @@ async getCartGroups(group_id: number): Promise<any> {
         }
       }
     });
+
     const product_discounts = await this.ProductDiscountRepository.find({
       where: {
         products: {
@@ -229,6 +236,7 @@ async getCartGroups(group_id: number): Promise<any> {
         cart_user.price = (product.price - (product.price * discountPercentage / 100)) * cart_user.quantity;
         await this.cart_userRepository.save(cart_user);
       }
+
     } else {
       const newCart_user = new Cart_user();
       newCart_user.cart_id = findCart.id;
@@ -237,6 +245,7 @@ async getCartGroups(group_id: number): Promise<any> {
       newCart_user.price = product.price * joinGroupDto.quantity_product;
       await this.cart_userRepository.save(newCart_user);
     }
+
     return {
       message: 'Joined group successfully',
       data: null,

@@ -10,6 +10,7 @@ import { JoinGroupDto } from './dto/join_group.dto';
 export class GruopsController {
     constructor(private groupsService:  GruopsService ) { }
 
+
     @UseGuards(AuthGuard)
     @Get()
     async getAllGroups(@Query('product_id') product_id: number,@CurrentUser() user: User): Promise<any>{
@@ -20,6 +21,7 @@ export class GruopsController {
     @Get('cart_group')
     async getCartUsers(@Query('group_id') group_id: number): Promise<any>{
         return this.groupsService.getCartGroups(group_id);
+
     }
 
 
