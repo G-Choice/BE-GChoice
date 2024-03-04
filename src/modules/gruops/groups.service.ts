@@ -69,7 +69,7 @@ export class GruopsService {
   
     return new ResponseItem(groupsWithRemainingTime, 'Successfully!');
 
-
+  }
 async getCartGroups(group_id: number): Promise<any> {
   const currentTimestamp = new Date().getTime();
   
