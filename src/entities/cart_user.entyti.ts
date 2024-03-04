@@ -22,9 +22,6 @@ export class Cart_user {
     @Column({ default: 0 })
     price: number;
 
-
-    @Column({ default: false })
-    isJoined: boolean;
     @ManyToOne(
         () => User,
         user => user.cart_users,
