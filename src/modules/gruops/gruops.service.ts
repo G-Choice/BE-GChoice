@@ -33,20 +33,20 @@ export class GruopsService {
     const exitingGroup = await this.usergroupRepository
       .createQueryBuilder('user_group')
       .innerJoin('user_group.groups', 'groups')
-      .where('groups.product_id = :productId', { productId: data.productId })
+      .where('groups.product_id = :productId', { productId: data.product_id })
       .andWhere('user_group.user_id = :userId', { userId: user.id })
       .where('user_group.role = :role', { role: PositionGroupEnum.LEADER })
       .getCount();
 
     if (exitingGroup < 1) {
-      const product = await this.productRepository.findOne({ where: { id: data.productId } });
+      const product = await this.productRepository.findOne({ where: { id: data.product_id } });
       if (!product) {
         throw new Error('Product not found');
       }
       const newGroup = this.groupRepository.create({
         group_name: data.group_name,
         description: data.description,
-        groupSize: data.groupSize,
+        groupSize: data.group_size,
         groupTime: addHours(new Date(), data.hours),
         products: product,
       });
