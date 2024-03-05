@@ -79,7 +79,7 @@ export class GruopsService {
   async createGroups(data: createGroupDto, @CurrentUser() user: User): Promise<any> {
     const existingUser = await this.userRepository.findOne({ where: { id: user.id } });
     console.log(existingUser);
-    
+
     if (!existingUser) {
       throw new NotFoundException('User does not exist.');
     }
@@ -91,8 +91,8 @@ export class GruopsService {
       .andWhere('user_group.role = :role', { role: PositionGroupEnum.LEADER })
       .getCount();
     console.log(exitingGroup);
-    
-    if (exitingGroup  < 1) {
+
+    if (exitingGroup < 1) {
       const product = await this.productRepository.findOne({ where: { id: data.product_id } });
       if (!product) {
         throw new Error('Product not found');
@@ -248,40 +248,28 @@ export class GruopsService {
   // }
 
 
-  // @Cron(CronExpression.EVERY_MINUTE)
+  @Cron(CronExpression.EVERY_MINUTE)
   async checkAndProcessExpiredGroups() {
     const groups = await this.groupRepository.find();
-    console.log(groups);
-    const now = new Date();
     for (const group of groups) {
-      const user_group = await this.usergroupRepository.find({ where: { group_id: group.id } });
-      console.log(user_group);
-      const userIds = user_group.map(userGroup => userGroup.user_id);
-      console.log(userIds );
-      const users = await this.userRepository.find({ where: { id: In(userIds) } });
-      console.log( users );
-      const cart = await this.cartsRepository.findOne({ where: { groups: { id: group.id } } });
-      console.log(cart);     
-      const cart_user = await this.cart_userRepository.find({ where: { carts: { id: cart.id } } });
-      console.log(cart_user);
-      
-      // if (group.groupTime < now) {
-      //   if (cart.total_quantity < group.groupSize) {
-      //     await this.usergroupRepository.delete({ group_id: group.id });
-      //     await this.cartsRepository.delete({ groups: { id: group.id } });
-      //     // await this.cart_userRepository.delete({ carts: { id: group.id } });
-      //     await this.groupRepository.delete(group.id);
-
-      //     console.log("12345678");
-      //   } else {
-      //     // Gửi thông báo đến leader của nhóm để xác nhận đơn hàng
-      //     console.log(`Group ${group.group_name} is ready for order confirmation. Notification sent to leader.`);
-      //   }
-      // }
+      const groupTime = new Date(group.groupTime);
+      if (groupTime.getTime() < new Date().getTime()) {
+        const user_group = await this.usergroupRepository.find({ where: { group_id: group.id } });
+        const userIds = user_group.map(userGroup => userGroup.user_id);
+        const users = await this.userRepository.find({ where: { id: In(userIds) } });
+        const cart = await this.cartsRepository.findOne({ where: { groups: { id: group.id } } });      
+        const cart_user = await this.cart_userRepository.find({ where: { carts: { id: cart.id } } });
+        if (cart.total_quantity < group.groupSize) {
+          await this.usergroupRepository.delete({ group_id: group.id });
+          await this.cartsRepository.delete({ groups: { id: group.id } });
+          await this.groupRepository.delete(group.id);
+          // await this.cartsRepository.delete
+          console.log("Expired group processed and deleted.");
+        } else {
+          // Gửi thông báo đến leader của nhóm để xác nhận đơn hàng
+          console.log(`Group ${group.group_name} is ready for order confirmation. Notification sent to leader.`);
+        }
+      }
     }
   }
-
-
 }
-
-
