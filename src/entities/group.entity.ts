@@ -3,6 +3,7 @@ import { Column, CreateDateColumn, Entity, JoinColumn, JoinTable, ManyToMany, Ma
 import { Product } from "./product.entity";
 import { User } from "./User.entity";
 import { Carts } from "./cart.entity";
+import { User_group } from "./user_group.entity";
 
 @Entity('groups')
 export class Group {
@@ -41,20 +42,23 @@ export class Group {
   @OneToOne(() =>  Carts, ( carts) =>  carts.groups)
   carts:Carts;
 
-  @ManyToMany(
-    () => User , 
-    user  => user.groups, //optional
-    {onDelete: 'NO ACTION', onUpdate: 'NO ACTION'})
-    @JoinTable({
-      name: 'user_group',
-      joinColumn: {
-        name: 'group_id',
-        referencedColumnName: 'id',
-      },
-      inverseJoinColumn: {
-        name: 'user_id',
-        referencedColumnName: 'id',
-      },
-    })
-    users?: User[];
+  // @ManyToMany(
+  //   () => User , 
+  //   user  => user.groups, //optional
+  //   {onDelete: 'NO ACTION', onUpdate: 'NO ACTION'})
+  //   @JoinTable({
+  //     name: 'user_group',
+  //     joinColumn: {
+  //       name: 'group_id',
+  //       referencedColumnName: 'id',
+  //     },
+  //     inverseJoinColumn: {
+  //       name: 'user_id',
+  //       referencedColumnName: 'id',
+  //     },
+  //   })
+  //   users?: User[];
+  
+    @OneToMany(() =>  User_group, user_group =>  user_group .groups)
+    user_groups: User_group[];
 }

@@ -37,14 +37,14 @@ export class GruopsController {
     }
     
 
-    @Post('send')
-    async sendNotification() {
-      try {
-        await this.groupsService.sendNotificationToToken();
-        return { message: 'Pus  h notification sent successfully' };
-      } catch (error) {
-        return { error: 'Failed to send push notification' };
-      }
-    }
+    // @Post('send')
+    // async sendNotification() {
+    //   try {
+    //     await this.groupsService.sendNotificationToToken();
+    //     return { message: 'Pus  h notification sent successfully' };
+    //   } catch (error) {
+    //     return { error: 'Failed to send push notification' };
+    //   }
+    // }
 } 
 

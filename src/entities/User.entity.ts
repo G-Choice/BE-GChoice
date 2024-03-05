@@ -71,13 +71,16 @@ export class User {
   productReviews:  ProductReview [];
 
   
-  @ManyToMany(
-    () => Group,
-    group => group.users,
-    {onDelete: 'NO ACTION', onUpdate: 'NO ACTION',},
-  )
+  // @ManyToMany(
+  //   () => Group,
+  //   group => group.users,
+  //   {onDelete: 'NO ACTION', onUpdate: 'NO ACTION',},
+  // )
   groups?: Group[];
   @OneToMany(() => Cart_user, cart_user => cart_user.users)
   cart_users: Cart_user[];
+
+  @OneToMany(() =>  User_group, user_group =>  user_group .users)
+  user_groups: User_group[];
   
 } 

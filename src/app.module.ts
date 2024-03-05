@@ -9,11 +9,12 @@ import { ProductDiscountModule } from './modules/product-discount/product-discou
 import { GruopsModule } from './modules/gruops/groups.module';
 import { FirebaseModule } from './firebase/firebase.module';
 import { AppController } from './app.controller';
-
+import { ScheduleModule } from '@nestjs/schedule';
 
 
 @Module({
   imports: [ConfigModule.forRoot({ isGlobal: true }),
+    ScheduleModule.forRoot(),
     DbModule,
     AuthModule,
     UserModule,
