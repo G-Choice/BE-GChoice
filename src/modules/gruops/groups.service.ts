@@ -108,7 +108,7 @@ async getCartGroups(group_id: number): Promise<any> {
       .innerJoin('user_group.groups', 'groups')
       .where('groups.product_id = :product_id ', { product_id: data.product_id })
       .andWhere('user_group.user_id = :userId', { userId: user.id })
-      .where('user_group.role = :role', { role: PositionGroupEnum.LEADER })
+      .andWhere('user_group.role = :role', { role: PositionGroupEnum.LEADER })
       .getCount();
 
     if (exitingGroup < 1) {
