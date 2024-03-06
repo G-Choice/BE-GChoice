@@ -3,6 +3,7 @@ import { Column, CreateDateColumn, Entity, JoinColumn, JoinTable, ManyToMany, Ma
 import { Product } from "./product.entity";
 import { User } from "./User.entity";
 import { Carts } from "./cart.entity";
+import { User_group } from "./user_group.entity";
 
 @Entity('groups')
 export class Group {
@@ -26,10 +27,14 @@ export class Group {
     @Column({ type: 'integer' }) 
     groupSize: number;
 
-
-    @Column({ type: 'timestamp'}) // Sử dụng kiểu timestamp cho groupTime
+    @Column({ type: 'timestamp'})
     @IsNotEmpty()
     groupTime: Date;
+
+    @Column({ type: 'varchar', length: 255,default:null })
+    @IsNotEmpty()
+    status: string;
+
 
     @CreateDateColumn({ nullable: true , default: () => 'CURRENT_TIMESTAMP' })
     create_At: Date;
@@ -42,20 +47,24 @@ export class Group {
   @OneToOne(() =>  Carts, ( carts) =>  carts.groups)
   carts:Carts;
 
-  @ManyToMany(
-    () => User , 
-    user  => user.groups, //optional
-    {onDelete: 'NO ACTION', onUpdate: 'NO ACTION'})
-    @JoinTable({
-      name: 'user_group',
-      joinColumn: {
-        name: 'group_id',
-        referencedColumnName: 'id',
-      },
-      inverseJoinColumn: {
-        name: 'user_id',
-        referencedColumnName: 'id',
-      },
-    })
-    users?: User[];
+  // @ManyToMany(
+  //   () => User , 
+  //   user  => user.groups, //optional
+  //   {onDelete: 'NO ACTION', onUpdate: 'NO ACTION'})
+  //   @JoinTable({
+  //     name: 'user_group',
+  //     joinColumn: {
+  //       name: 'group_id',
+  //       referencedColumnName: 'id',
+  //     },
+  //     inverseJoinColumn: {
+  //       name: 'user_id',
+  //       referencedColumnName: 'id',
+  //     },
+  //   })
+  //   users?: User[];
+  
+    @OneToMany(() =>  User_group, user_group =>  user_group .groups)
+    user_groups: User_group[];
+
 }

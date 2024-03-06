@@ -109,7 +109,7 @@ export class AuthService {
   }
  
   async login(loginUserDto: loginUserDto): Promise<any> {
-    const {email, password} = loginUserDto;
+    const {email, password,fcmToken} = loginUserDto;
     const user = await this.UserRepository.findOne({where: {email:email}})
     if (!user) {
       throw new HttpException('User does not exist', HttpStatus.UNAUTHORIZED);
@@ -118,6 +118,8 @@ export class AuthService {
       if (!passwordMatches) {
         throw new HttpException({ message: 'Invalid credentials', status: HttpStatus.UNAUTHORIZED }, HttpStatus.UNAUTHORIZED);
       }
+    user.fcmToken = fcmToken;
+    await this.UserRepository.save(user);
     const refreshToken = await this.generateRefreshToken(user);
     user.refreshToken = refreshToken; 
     await this.UserRepository.save(user);

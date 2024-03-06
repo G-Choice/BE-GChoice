@@ -11,17 +11,18 @@ export class GruopsController {
     constructor(private groupsService:  GruopsService ) { }
 
 
+
     @UseGuards(AuthGuard)
     @Get()
     async getAllGroups(@Query('product_id') product_id: number,@CurrentUser() user: User): Promise<any>{
         return this.groupsService.getAllGroups(product_id,user);
+
     }
 
 
     @Get('cart_group')
     async getCartUsers(@Query('group_id') group_id: number): Promise<any>{
         return this.groupsService.getCartGroups(group_id);
-
     }
 
 
@@ -39,6 +40,6 @@ export class GruopsController {
     }
     
 
-   
+
 } 
 

@@ -1,7 +1,7 @@
 import { Body, Injectable, NotFoundException } from '@nestjs/common';
 import { Group } from 'src/entities/group.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { createGroupDto } from './dto/createGroup.dto';
 import { User_group } from 'src/entities/user_group.entity';
 import { User } from 'src/entities/User.entity';
@@ -14,7 +14,10 @@ import { JoinGroupDto } from './dto/join_group.dto';
 import { Carts } from 'src/entities/cart.entity';
 import { Cart_user } from 'src/entities/cart_user.entyti';
 import { ProductDiscount } from 'src/entities/product_discount.entity';
-import { log } from 'console';
+import { FirebaseRepository } from 'src/firebase/firebase.service';
+import * as admin from 'firebase-admin';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { response } from 'express';
 
 @Injectable()
 export class GruopsService {
@@ -33,18 +36,17 @@ export class GruopsService {
     private readonly cart_userRepository: Repository<Cart_user>,
     @InjectRepository(ProductDiscount)
     private readonly ProductDiscountRepository: Repository<ProductDiscount>,
-  ) { }
+    private readonly firebaseRepository: FirebaseRepository
 
+  ) { }
 
   async getAllGroups(@Body() product_id: number, @CurrentUser() user: User): Promise<any> {
     const currentTimestamp = new Date().getTime();
-
     const groupsByProductId = await this.groupRepository
       .createQueryBuilder('group')
       .addSelect('group.groupTime')
       .leftJoin('group.carts', 'carts')
       .addSelect('carts.total_quantity')
-
       .leftJoin('group.users', 'users', 'users.id = :userId', { userId: user.id }) 
       .addSelect('users.id')
       .where('group.product_id = :product_id', { product_id: product_id })
@@ -88,7 +90,6 @@ async getCartGroups(group_id: number): Promise<any> {
       .where('cart_user.cart_id = :cartId', { cartId: findCart.id })
       .getMany();
   const totalPrice = cartGroups.reduce((total, group) => total + group.price, 0);
-
   return {
       data: cartGroups,
       totalPrice,
@@ -159,7 +160,6 @@ async getCartGroups(group_id: number): Promise<any> {
         newCart_user.user_id = user.id;
         newCart_user.quantity = data.quantity_product;
         newCart_user.price = (product.price - (product.price * discountPercentage / 100)) * data.quantity_product;
-
         await this.cart_userRepository.save(newCart_user);
 
 
@@ -194,8 +194,6 @@ async getCartGroups(group_id: number): Promise<any> {
     newUserGroup.user_id = user.id;
     newUserGroup.role = PositionGroupEnum.MEMBER;
     await this.usergroupRepository.save(newUserGroup);
-
-
     const findCart = await this.cartsRepository.findOne({ where: { groups: { id: joinGroupDto.group_id } } });
     findCart.total_quantity += joinGroupDto.quantity_product;
     await this.cartsRepository.save(findCart);
@@ -207,7 +205,6 @@ async getCartGroups(group_id: number): Promise<any> {
         }
       }
     });
-
     const product_discounts = await this.ProductDiscountRepository.find({
       where: {
         products: {
@@ -236,7 +233,6 @@ async getCartGroups(group_id: number): Promise<any> {
         cart_user.price = (product.price - (product.price * discountPercentage / 100)) * cart_user.quantity;
         await this.cart_userRepository.save(cart_user);
       }
-
     } else {
       const newCart_user = new Cart_user();
       newCart_user.cart_id = findCart.id;
@@ -245,12 +241,44 @@ async getCartGroups(group_id: number): Promise<any> {
       newCart_user.price = product.price * joinGroupDto.quantity_product;
       await this.cart_userRepository.save(newCart_user);
     }
-
     return {
       message: 'Joined group successfully',
       data: null,
     };
   }
-}
 
+  @Cron(CronExpression.EVERY_MINUTE)
+  async checkAndProcessExpiredGroups() {
+    const now = new Date().getTime();
+    const groups = await this.groupRepository.find({ where: { status: null } });
+    for (const group of groups) {
+      const user_group = await this.usergroupRepository.find({ where: { group_id: group.id } });
+      const userIds = user_group.map(userGroup => userGroup.user_id);
+      const users = await this.userRepository.find({ where: { id: In(userIds) } });
+      const cart = await this.cartsRepository.findOne({ where: { groups: { id: group.id } } });
+      const product = await this.productRepository.findOne({ where: { groups: { id: group.id } } });
+      if (group.groupTime.getTime() < now) {
+        if (cart.total_quantity < group.groupSize) {
+          await this.cart_userRepository.delete({ carts: { id: cart.id } });
+          await this.cartsRepository.delete({ groups: { id: group.id } });
+          await this.usergroupRepository.delete({ group_id: group.id });
+          await this.groupRepository.delete(group.id);
+          for (const user of users) {
+            await this.firebaseRepository.sendPushNotification(user.fcmToken, {
+              title: 'G-Choice notification', body: `The group ${product.product_name} has expired and has been deleted due to insufficient participants.`
+            })
+          }
+        }
+      }
+      else {
+        if (cart.total_quantity >= group.groupSize) {
+          await this.groupRepository.update(group.id, { status: "OKE" });
+          for (const user of users) {
+            await this.firebaseRepository.sendPushNotification(user.fcmToken, { title: 'G-Choice notification', body: `The group ${product.product_name} has enough participants. Please confirm your order.` });
+          }
+        }
+      }
+    }
+  }
+}
 

@@ -37,6 +37,11 @@ export class User {
   @IsOptional()
   image: string;
 
+  
+  @Column({ type: 'varchar', length: 255  ,nullable: true })
+  @IsOptional()
+  fcmToken: string;
+
   @Column({
     type: 'enum',
     enum: PositionEnum,
@@ -66,15 +71,18 @@ export class User {
   productReviews:  ProductReview [];
 
   
-  @ManyToMany(
-    () => Group,
-    group => group.users,
-    {onDelete: 'NO ACTION', onUpdate: 'NO ACTION',},
-  )
-  groups?: Group[];
 
+  // @ManyToMany(
+  //   () => Group,
+  //   group => group.users,
+  //   {onDelete: 'NO ACTION', onUpdate: 'NO ACTION',},
+  // )
+  groups?: Group[];
   @OneToMany(() => Cart_user, cart_user => cart_user.users)
   cart_users: Cart_user[];
+
+  @OneToMany(() =>  User_group, user_group =>  user_group .users)
+  user_groups: User_group[];
 
   
 } 

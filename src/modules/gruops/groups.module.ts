@@ -9,11 +9,14 @@ import { Group } from 'src/entities/group.entity';
 import { Carts } from 'src/entities/cart.entity';
 import { Cart_user } from 'src/entities/cart_user.entyti';
 import { ProductDiscount } from 'src/entities/product_discount.entity';
+import { FirebaseModule } from 'src/firebase/firebase.module';
+
 
 
 @Module({
     imports: [
       TypeOrmModule.forFeature([Product,User_group,User,Group,Carts,Cart_user,ProductDiscount]),
+      FirebaseModule
     ],
     controllers:[GruopsController],
     providers: [GruopsService],
