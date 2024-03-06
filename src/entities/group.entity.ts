@@ -31,6 +31,10 @@ export class Group {
     @IsNotEmpty()
     groupTime: Date;
 
+    @Column({ type: 'varchar', length: 255,default:null })
+    @IsNotEmpty()
+    status: string;
+
     @CreateDateColumn({ nullable: true , default: () => 'CURRENT_TIMESTAMP' })
     create_At: Date;
    

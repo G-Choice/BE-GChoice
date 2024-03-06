@@ -8,18 +8,18 @@ export class FirebaseRepository {
   constructor(@Inject('FIREBASE_APP') private firebaseApp: admin.app.App) {
     this.messaging = this.firebaseApp.messaging();
   }
-  async sendPushNotification(token: string, notification: admin.messaging.Notification, data?: admin.messaging.DataMessagePayload): Promise<string> {
+  async sendPushNotification(token: string, notification: admin.messaging.Notification): Promise<string> {
     try {
       const message: admin.messaging.Message = {
         token: token,
         notification: notification,
-        data: data,
       };
-
       const response = await this.messaging.send(message);
       return response;
     } catch (error) {
       throw new Error(`Failed to send push notification: ${error.message}`);
     }
   }
+
+  
 }

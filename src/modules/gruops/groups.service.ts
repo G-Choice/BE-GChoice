@@ -17,7 +17,7 @@ import { ProductDiscount } from 'src/entities/product_discount.entity';
 import { FirebaseRepository } from 'src/firebase/firebase.service';
 import * as admin from 'firebase-admin';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { log } from 'console';
+import { response } from 'express';
 @Injectable()
 export class GruopsService {
   constructor(
@@ -78,8 +78,6 @@ export class GruopsService {
   }
   async createGroups(data: createGroupDto, @CurrentUser() user: User): Promise<any> {
     const existingUser = await this.userRepository.findOne({ where: { id: user.id } });
-    console.log(existingUser);
-
     if (!existingUser) {
       throw new NotFoundException('User does not exist.');
     }
@@ -90,7 +88,6 @@ export class GruopsService {
       .andWhere('user_group.user_id = :userId', { userId: user.id })
       .andWhere('user_group.role = :role', { role: PositionGroupEnum.LEADER })
       .getCount();
-    console.log(exitingGroup);
 
     if (exitingGroup < 1) {
       const product = await this.productRepository.findOne({ where: { id: data.product_id } });
@@ -228,46 +225,51 @@ export class GruopsService {
     };
   }
 
-  // async sendNotificationToToken() {
-  //   const token = 'fSdqVbBPR7CJJIQCVs-bs5:APA91bEZbUEw9RKld5LExYe9lSpVwd4eIyebSFQOVLzRsaWikT8pmz-xfGYsMXacaBTik-r5dijpk6Y9fS4jATMQ4eTPaXQkurxjy90gHNhPFHxpWqen-60qa3o-6w-I0tSaLI56NUd7';
-  //   const notification: admin.messaging.Notification = {
-  //     title: 'Your notification title',
-  //     body: 'Your notification body',
-  //   };
-  //   const data: admin.messaging.DataMessagePayload = {
-  //     // optional data payload
-  //     // add any custom data you want to send with your notification
-  //   };
+  async sendNotificationToToken() {
+    const token = 'fnnINrAtQmy6MUIRpMT63c:APA91bGnGLvnCvTjrUSD9VaWlQl9llOr6lr0e-31UXtGVDTcDMAIIPasiJuH5qG5Ywh_7sSy74KcodEC5NciR_wNEKtTPqDRf95WrBDbzpi8DOA5RSpn-4taXf_BVQGG7-NcWOZvk3M7';
+    const notification: admin.messaging.Notification = {
+      title: 'G-CHOICE',
+      body: 'Your notification body',
+    };
 
-  //   try {
-  //     const response = await this.firebaseRepository.sendPushNotification(token, notification);
-  //     console.log('Push notification sent successfully:', response);
-  //   } catch (error) {
-  //     console.error('Failed to send push notification:', error);
-  //   }
-  // }
+    try {
+      const response = await this.firebaseRepository.sendPushNotification(token, notification);
+      console.log('Push notification sent successfully:', response);
+    } catch (error) {
+      console.error('Failed to send push notification:', error);
+    }
+  }
 
 
   @Cron(CronExpression.EVERY_MINUTE)
   async checkAndProcessExpiredGroups() {
-    const groups = await this.groupRepository.find();
+    const now = new Date().getTime();
+    const groups = await this.groupRepository.find({ where: { status: null } });
     for (const group of groups) {
-      const groupTime = new Date(group.groupTime);
-      if (groupTime.getTime() < new Date().getTime()) {
-        const user_group = await this.usergroupRepository.find({ where: { group_id: group.id } });
-        const userIds = user_group.map(userGroup => userGroup.user_id);
-        const users = await this.userRepository.find({ where: { id: In(userIds) } });
-        const cart = await this.cartsRepository.findOne({ where: { groups: { id: group.id } } });      
-        const cart_user = await this.cart_userRepository.find({ where: { carts: { id: cart.id } } });
+      const user_group = await this.usergroupRepository.find({ where: { group_id: group.id } });
+      const userIds = user_group.map(userGroup => userGroup.user_id);
+      const users = await this.userRepository.find({ where: { id: In(userIds) } });
+      const cart = await this.cartsRepository.findOne({ where: { groups: { id: group.id } } });
+      const product = await this.productRepository.findOne({ where: { groups: { id: group.id } } });
+      if (group.groupTime.getTime() < now) {
         if (cart.total_quantity < group.groupSize) {
-          await this.usergroupRepository.delete({ group_id: group.id });
+          await this.cart_userRepository.delete({ carts: { id: cart.id } });
           await this.cartsRepository.delete({ groups: { id: group.id } });
+          await this.usergroupRepository.delete({ group_id: group.id });
           await this.groupRepository.delete(group.id);
-          // await this.cartsRepository.delete
-          console.log("Expired group processed and deleted.");
-        } else {
-          // Gửi thông báo đến leader của nhóm để xác nhận đơn hàng
-          console.log(`Group ${group.group_name} is ready for order confirmation. Notification sent to leader.`);
+          for (const user of users) {
+            await this.firebaseRepository.sendPushNotification(user.fcmToken, {
+              title: 'G-Choice notification', body: `The group ${product.product_name} has expired and has been deleted due to insufficient participants.`
+            })
+          }
+        }
+      }
+      else {
+        if (cart.total_quantity >= group.groupSize) {
+          await this.groupRepository.update(group.id, { status: "OKE" });
+          for (const user of users) {
+            await this.firebaseRepository.sendPushNotification(user.fcmToken, { title: 'G-Choice notification', body: `The group ${product.product_name} has enough participants. Please confirm your order.` });
+          }
         }
       }
     }
