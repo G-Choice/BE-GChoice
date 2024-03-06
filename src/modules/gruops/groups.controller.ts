@@ -11,9 +11,12 @@ export class GruopsController {
     constructor(private groupsService:  GruopsService ) { }
 
 
+
+    @UseGuards(AuthGuard)
     @Get()
-    async getAllGroups(@Query('product_id') product_id: number): Promise<any>{
-        return this.groupsService.getAllGroups(product_id);
+    async getAllGroups(@Query('product_id') product_id: number,@CurrentUser() user: User): Promise<any>{
+        return this.groupsService.getAllGroups(product_id,user);
+
     }
 
 
@@ -37,14 +40,6 @@ export class GruopsController {
     }
     
 
-    @Post('send')
-    async sendNotification() {
-      try {
-        await this.groupsService.sendNotificationToToken();
-        return { message: 'Pus h notification sent successfully' };
-      } catch (error) {
-        return { error: 'Failed to send push notification' };
-      }
-    }
+
 } 
 

@@ -18,6 +18,7 @@ import { FirebaseRepository } from 'src/firebase/firebase.service';
 import * as admin from 'firebase-admin';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { response } from 'express';
+
 @Injectable()
 export class GruopsService {
   constructor(
@@ -39,43 +40,65 @@ export class GruopsService {
 
   ) { }
 
-  async getAllGroups(@Body() product_id: number): Promise<any> {
-    const currentTimestamp = new Date().getTime(); // Thời gian hiện tại
-
+  async getAllGroups(@Body() product_id: number, @CurrentUser() user: User): Promise<any> {
+    const currentTimestamp = new Date().getTime();
     const groupsByProductId = await this.groupRepository
       .createQueryBuilder('group')
       .addSelect('group.groupTime')
       .leftJoin('group.carts', 'carts')
       .addSelect('carts.total_quantity')
+      .leftJoin('group.users', 'users', 'users.id = :userId', { userId: user.id }) 
+      .addSelect('users.id')
       .where('group.product_id = :product_id', { product_id: product_id })
-      .andWhere('group.groupTime > :currentTimestamp', { currentTimestamp: new Date() })
       .getMany();
+    
     const groupsWithRemainingTime = groupsByProductId.map(group => {
       const remainingTimeInMilliseconds = group.groupTime.getTime() - currentTimestamp;
-      const remainingHours = remainingTimeInMilliseconds / (1000 * 60 * 60);
+      let remainingHours = remainingTimeInMilliseconds / (1000 * 60 * 60);
+      
+      if (remainingHours < 0) {
+        remainingHours = 0;
+      }
+      
+      const isJoined = group.users.length > 0;   
       return {
         ...group,
-        remainingHours: remainingHours
+        remainingHours: remainingHours,
+        isJoined: isJoined
+
       };
     });
-
+  
     return new ResponseItem(groupsWithRemainingTime, 'Successfully!');
+
+  }
+async getCartGroups(group_id: number): Promise<any> {
+  const currentTimestamp = new Date().getTime();
+  
+  const findCart = await this.cartsRepository.findOne({ where: { groups: { id: group_id } } });
+  const productByGroup = await this.productRepository.findOne({ where: { groups: { id: group_id } } });
+  const group = await this.groupRepository.findOne({ where: { id: group_id } });
+  let remainingHours = (group.groupTime.getTime() - currentTimestamp) / (1000 * 60 * 60);
+  if (remainingHours < 0) {
+      remainingHours = 0;
   }
 
-  async getCartGroups(group_id: number): Promise<any> {
-    const findCart = await this.cartsRepository.findOne({ where: { groups: { id: group_id } } });
-    const cartGroups = await this.cart_userRepository
+  const cartGroups = await this.cart_userRepository
       .createQueryBuilder('cart_user')
       .leftJoin('cart_user.users', 'users')
       .addSelect(['users.id', 'users.username', 'users.email', 'users.image', 'users.address'])
       .where('cart_user.cart_id = :cartId', { cartId: findCart.id })
       .getMany();
-    const totalPrice = cartGroups.reduce((total, group) => total + group.price, 0);
-    return {
-      data: cartGroups, totalPrice,
+  const totalPrice = cartGroups.reduce((total, group) => total + group.price, 0);
+  return {
+      data: cartGroups,
+      totalPrice,
+      remainingHours,
+      productByGroup,
       message: 'Successfully!'
-    };
-  }
+  };
+}
+
   async createGroups(data: createGroupDto, @CurrentUser() user: User): Promise<any> {
     const existingUser = await this.userRepository.findOne({ where: { id: user.id } });
     if (!existingUser) {
@@ -171,7 +194,6 @@ export class GruopsService {
     newUserGroup.user_id = user.id;
     newUserGroup.role = PositionGroupEnum.MEMBER;
     await this.usergroupRepository.save(newUserGroup);
-
     const findCart = await this.cartsRepository.findOne({ where: { groups: { id: joinGroupDto.group_id } } });
     findCart.total_quantity += joinGroupDto.quantity_product;
     await this.cartsRepository.save(findCart);
@@ -225,22 +247,6 @@ export class GruopsService {
     };
   }
 
-  async sendNotificationToToken() {
-    const token = 'fnnINrAtQmy6MUIRpMT63c:APA91bGnGLvnCvTjrUSD9VaWlQl9llOr6lr0e-31UXtGVDTcDMAIIPasiJuH5qG5Ywh_7sSy74KcodEC5NciR_wNEKtTPqDRf95WrBDbzpi8DOA5RSpn-4taXf_BVQGG7-NcWOZvk3M7';
-    const notification: admin.messaging.Notification = {
-      title: 'G-CHOICE',
-      body: 'Your notification body',
-    };
-
-    try {
-      const response = await this.firebaseRepository.sendPushNotification(token, notification);
-      console.log('Push notification sent successfully:', response);
-    } catch (error) {
-      console.error('Failed to send push notification:', error);
-    }
-  }
-
-
   @Cron(CronExpression.EVERY_MINUTE)
   async checkAndProcessExpiredGroups() {
     const now = new Date().getTime();
@@ -275,3 +281,4 @@ export class GruopsService {
     }
   }
 }
+

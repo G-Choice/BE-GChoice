@@ -35,6 +35,7 @@ export class Group {
     @IsNotEmpty()
     status: string;
 
+
     @CreateDateColumn({ nullable: true , default: () => 'CURRENT_TIMESTAMP' })
     create_At: Date;
    
@@ -65,4 +66,5 @@ export class Group {
   
     @OneToMany(() =>  User_group, user_group =>  user_group .groups)
     user_groups: User_group[];
+
 }

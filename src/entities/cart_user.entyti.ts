@@ -18,7 +18,7 @@ export class Cart_user {
 
     @Column()
     quantity: number;
-
+  
     @Column({default: 0})
     price: number;
 

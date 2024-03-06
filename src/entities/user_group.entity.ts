@@ -20,6 +20,7 @@ export class User_group {
   @ManyToOne(
     () => User,
     user => user.user_groups,
+
     {onDelete: 'NO ACTION', onUpdate: 'NO ACTION'}
   )
   @JoinColumn([{ name: 'user_id', referencedColumnName: 'id' }])
@@ -28,6 +29,7 @@ export class User_group {
   @ManyToOne(
     () => Group,
     group => group.user_groups,
+
     {onDelete: 'NO ACTION', onUpdate: 'NO ACTION'}
   )
   @JoinColumn([{ name: 'group_id', referencedColumnName: 'id' }])

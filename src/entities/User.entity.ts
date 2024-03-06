@@ -71,6 +71,7 @@ export class User {
   productReviews:  ProductReview [];
 
   
+
   // @ManyToMany(
   //   () => Group,
   //   group => group.users,
@@ -82,5 +83,6 @@ export class User {
 
   @OneToMany(() =>  User_group, user_group =>  user_group .users)
   user_groups: User_group[];
+
   
 } 
