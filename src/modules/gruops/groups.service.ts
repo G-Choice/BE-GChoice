@@ -47,20 +47,20 @@ export class GruopsService {
       .addSelect('group.groupTime')
       .leftJoin('group.carts', 'carts')
       .addSelect('carts.total_quantity')
-      .leftJoin('group.users', 'users', 'users.id = :userId', { userId: user.id }) 
+      .leftJoin('group.users', 'users', 'users.id = :userId', { userId: user.id })
       .addSelect('users.id')
       .where('group.product_id = :product_id', { product_id: product_id })
       .getMany();
-    
+
     const groupsWithRemainingTime = groupsByProductId.map(group => {
       const remainingTimeInMilliseconds = group.groupTime.getTime() - currentTimestamp;
       let remainingHours = remainingTimeInMilliseconds / (1000 * 60 * 60);
-      
+
       if (remainingHours < 0) {
         remainingHours = 0;
       }
-      
-      const isJoined = group.users.length > 0;   
+
+      const isJoined = group.users.length > 0;
       return {
         ...group,
         remainingHours: remainingHours,
@@ -68,36 +68,36 @@ export class GruopsService {
 
       };
     });
-  
+
     return new ResponseItem(groupsWithRemainingTime, 'Successfully!');
 
   }
-async getCartGroups(group_id: number): Promise<any> {
-  const currentTimestamp = new Date().getTime();
-  
-  const findCart = await this.cartsRepository.findOne({ where: { groups: { id: group_id } } });
-  const productByGroup = await this.productRepository.findOne({ where: { groups: { id: group_id } } });
-  const group = await this.groupRepository.findOne({ where: { id: group_id } });
-  let remainingHours = (group.groupTime.getTime() - currentTimestamp) / (1000 * 60 * 60);
-  if (remainingHours < 0) {
-      remainingHours = 0;
-  }
+  async getCartGroups(group_id: number): Promise<any> {
+    const currentTimestamp = new Date().getTime();
 
-  const cartGroups = await this.cart_userRepository
+    const findCart = await this.cartsRepository.findOne({ where: { groups: { id: group_id } } });
+    const productByGroup = await this.productRepository.findOne({ where: { groups: { id: group_id } } });
+    const group = await this.groupRepository.findOne({ where: { id: group_id } });
+    let remainingHours = (group.groupTime.getTime() - currentTimestamp) / (1000 * 60 * 60);
+    if (remainingHours < 0) {
+      remainingHours = 0;
+    }
+
+    const cartGroups = await this.cart_userRepository
       .createQueryBuilder('cart_user')
       .leftJoin('cart_user.users', 'users')
       .addSelect(['users.id', 'users.username', 'users.email', 'users.image', 'users.address'])
       .where('cart_user.cart_id = :cartId', { cartId: findCart.id })
       .getMany();
-  const totalPrice = cartGroups.reduce((total, group) => total + group.price, 0);
-  return {
+    const totalPrice = cartGroups.reduce((total, group) => total + group.price, 0);
+    return {
       data: cartGroups,
       totalPrice,
       remainingHours,
       productByGroup,
       message: 'Successfully!'
-  };
-}
+    };
+  }
 
   async createGroups(data: createGroupDto, @CurrentUser() user: User): Promise<any> {
     const existingUser = await this.userRepository.findOne({ where: { id: user.id } });

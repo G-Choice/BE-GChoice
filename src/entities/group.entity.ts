@@ -47,22 +47,22 @@ export class Group {
   @OneToOne(() =>  Carts, ( carts) =>  carts.groups)
   carts:Carts;
 
-  // @ManyToMany(
-  //   () => User , 
-  //   user  => user.groups, //optional
-  //   {onDelete: 'NO ACTION', onUpdate: 'NO ACTION'})
-  //   @JoinTable({
-  //     name: 'user_group',
-  //     joinColumn: {
-  //       name: 'group_id',
-  //       referencedColumnName: 'id',
-  //     },
-  //     inverseJoinColumn: {
-  //       name: 'user_id',
-  //       referencedColumnName: 'id',
-  //     },
-  //   })
-  //   users?: User[];
+  @ManyToMany(
+    () => User , 
+    user  => user.groups, //optional
+    {onDelete: 'NO ACTION', onUpdate: 'NO ACTION'})
+    @JoinTable({
+      name: 'user_group',
+      joinColumn: {
+        name: 'group_id',
+        referencedColumnName: 'id',
+      },
+      inverseJoinColumn: {
+        name: 'user_id',
+        referencedColumnName: 'id',
+      },
+    })
+    users?: User[];
   
     @OneToMany(() =>  User_group, user_group =>  user_group .groups)
     user_groups: User_group[];

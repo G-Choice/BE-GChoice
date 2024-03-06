@@ -26,7 +26,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     FirebaseModule
 
   ],
-  controllers: [AppController],
+  controllers: [],
   providers: [],
 })
 export class AppModule  {
