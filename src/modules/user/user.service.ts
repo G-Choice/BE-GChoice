@@ -1,17 +1,71 @@
-import { Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/entities/User.entity';
 import { Repository } from 'typeorm';
-
+import { UpdateUserDTO } from './update_user.dto';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 @Injectable()
 export class UserService {
 
   constructor(
     @InjectRepository(User)
-    private readonly UserRepository: Repository<User>,
+    private readonly userRepository: Repository<User>,
+    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
-  async getAllUsers(): Promise<User[]> {
-    return await this.UserRepository.find();
+  async getCurrentUser(user: User): Promise<{ data: User | null, message: string, statusCode: number }> {
+    const user_id  = user.id;
+    const currentUser = await this.userRepository.findOne({ where:{id: user_id}});
+
+    if (!currentUser) {
+      return {
+        statusCode: HttpStatus.NOT_FOUND,
+        message: 'User not found',
+        data: null,
+      };
+    }
+
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'User found',
+      data: currentUser,
+    };
   }
+
+
+  async updateUser(files: Express.Multer.File[], user: User, updateUserDTO: UpdateUserDTO): Promise<{ data: User | null, message: string, statusCode: number }> {
+    try {
+      const foundUser = await this.userRepository.findOne({ where: { id: user.id }});
+      if (!foundUser) {
+        return {
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'User not found',
+          data: null,
+        };
+      }
+      if (foundUser.image) {
+        foundUser.image = null;
+    }
+      foundUser.username = updateUserDTO.username;
+      foundUser.email = updateUserDTO.email;
+      foundUser.number_phone = updateUserDTO.number_phone;
+      if (files && files.length > 0) {
+        const cloudinaryResult = await this.cloudinaryService.uploadImages(files, 'user');
+        foundUser.image = cloudinaryResult.map(item => item.secure_url);
+      }
+      await this.userRepository.save(foundUser);
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'User updated successfully',
+        data: foundUser,
+      };
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: 'Failed to update user',
+        data: null,
+      };
+    }
+  }
+  
 }

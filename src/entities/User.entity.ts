@@ -33,9 +33,9 @@ export class User {
   @IsOptional()
   address: string;
 
-  @Column({ type: 'varchar', length: 255  ,nullable: true })
+  @Column({ type: 'text', array: true, default: '{}' })
   @IsOptional()
-  image: string;
+  image: string[];
 
   
   @Column({ type: 'varchar', length: 255  ,nullable: true })
