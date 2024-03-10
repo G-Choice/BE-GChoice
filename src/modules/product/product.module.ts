@@ -7,10 +7,11 @@ import { Product } from 'src/entities/product.entity';
 import { Category } from 'src/entities/category.entity';
 // import { ProductImage } from 'src/entities/product_image.entity';
 import { ProductReview } from 'src/entities/ProductReviews.entity';
+import {Shop} from 'src/entities/shop.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Product,Category,ProductReview]),
+    TypeOrmModule.forFeature([Product,Category,ProductReview,Shop]),
     CloudinaryModule,
   ],
   controllers:[ProductController],

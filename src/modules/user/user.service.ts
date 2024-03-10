@@ -2,7 +2,7 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/entities/User.entity';
 import { Repository } from 'typeorm';
-import { UpdateUserDTO } from './update_user.dto';
+import { UpdateUserDTO } from './dto/update_user.dto';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 @Injectable()
 export class UserService {
@@ -33,7 +33,7 @@ export class UserService {
   }
 
 
-  async updateUser(files: Express.Multer.File[], user: User, updateUserDTO: UpdateUserDTO): Promise<{ data: User | null, message: string, statusCode: number }> {
+  async updateUser(files: Array<Express.Multer.File>, user: User, updateUserDTO: UpdateUserDTO): Promise<{ data: User | null, message: string, statusCode: number }> {
     try {
       const foundUser = await this.userRepository.findOne({ where: { id: user.id }});
       if (!foundUser) {
@@ -62,7 +62,7 @@ export class UserService {
     } catch (error) {
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: 'Failed to update user',
+        message: 'Failed to update user'+error.message,
         data: null,
       };
     }

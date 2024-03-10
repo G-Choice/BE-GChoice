@@ -2,6 +2,7 @@
 export enum StatusEnum {
   ACTIVE = 'active',
   INACTIVE = 'inactive',
+  MAINTENANCE = 'maintaining',
 }
 
 export enum  PositionEnum {

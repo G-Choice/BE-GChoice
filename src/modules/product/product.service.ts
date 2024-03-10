@@ -1,6 +1,6 @@
-import { HttpException, HttpStatus, Injectable, InternalServerErrorException, NotFoundException, Query } from '@nestjs/common';
+import { Body, HttpException, HttpStatus, Injectable, InternalServerErrorException, NotFoundException, Param, Query, UploadedFiles } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository,} from 'typeorm';
+import { Repository, } from 'typeorm';
 import { addProductDto } from './dto/add-product.dto';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { Product } from 'src/entities/product.entity';
@@ -14,6 +14,10 @@ import { loginUserDto } from '../auth/dto/login.dto';
 import { Category } from 'src/entities/category.entity';
 // import { ProductImage } from 'src/entities/product_image.entity';
 import { ProductReview } from 'src/entities/ProductReviews.entity';
+import { CurrentUser } from '../guards/user.decorator';
+import { User } from 'src/entities/User.entity';
+import { Shop } from 'src/entities/shop.entity';
+import { UpdateProductDto } from './dto/update_product.dto';
 
 @Injectable()
 export class ProductService {
@@ -26,24 +30,51 @@ export class ProductService {
     // private readonly productImageRepository: Repository<ProductImage>,
     @InjectRepository(ProductReview)
     private readonly productReviewRepository: Repository<ProductReview>,
+    @InjectRepository(Shop)
+    private readonly shopRepository: Repository<Shop>,
     private readonly cloudinaryService: CloudinaryService,
   ) { }
 
-  async addNewProduct(addProductData: addProductDto, files: Array<Express.Multer.File>): Promise<{ status: string; message: string; data: Product }> {
+  async addNewProduct(
+    @UploadedFiles() files: Array<Express.Multer.File>,
+    @Body() addProductData: addProductDto,
+    @CurrentUser() user: User,
+  ): Promise<{ statusCode: number; message: string; data: Product }> {
     try {
-    const cloudinaryResult = await this.cloudinaryService.uploadImages(files, 'product');
-    const secureUrls = cloudinaryResult.map(item => item.secure_url);
+      const Shop = await this.shopRepository.findOne({ where: { user: { id: user.id } } });
+      if (!Shop) {
+        return {
+          message: "Shop not found.Please create a shop before adding products.",
+          data: null,
+          statusCode: HttpStatus.NOT_FOUND,
+        };
+      }
+      const category = await this.categoryRepository.findOne({ where: { id: addProductData.category_id } });
+      if (!category) {
+        {
+          return {
+            message: "Category not found",
+            data: null,
+            statusCode: HttpStatus.NOT_FOUND,
+          }
+        }
+      }
+      const cloudinaryResult = await this.cloudinaryService.uploadImages(files, 'product');
+      const secureUrls = cloudinaryResult.map(item => item.secure_url);
       const newProduct = this.productRepository.create({
         product_name: addProductData.product_name,
         price: addProductData.price,
-        images:secureUrls,
+        images: secureUrls,
         status: StatusEnum.ACTIVE,
         description: addProductData.description,
         brand: addProductData.brand,
+        quantity_inventory: addProductData.product_availability,
+        shop: Shop,
+        category: category,
       });
       const savedProduct = await this.productRepository.save(newProduct);
       return {
-        status: 'success',
+        statusCode: HttpStatus.OK,
         message: 'Product added successfully!',
         data: savedProduct,
       };
@@ -57,14 +88,54 @@ export class ProductService {
     }
   }
 
+  async getAllproductByShop(params: GetProductParams, @CurrentUser() user: User,) {
+    const page = params.page || 1;
+    const take = params.take || 6;
+    const skip = (page - 1) * take;
+    const Shop = await this.shopRepository.findOne({ where: { user: { id: user.id } } });
+    const products = this.productRepository
+      .createQueryBuilder('product')
+      .where('product.shop_id = :shopId ', { shopId: Shop.id })
+      .leftJoin('product.category', 'category')
+      .addSelect('category.category_name AS category_name')
+      .offset(skip)
+      .limit(params.take)
+      .orderBy('product. created_at', Order.DESC) 
+    if (params.searchByName) {
+      products.andWhere('LOWER(product.product_name) LIKE LOWER(:productName)', {
+        productName: `%${params.searchByName}%`,
+      });
+    }
+    if (params.sortByPrice === 'asc') {
+      products.orderBy('product.price', Order.ASC);
+    }
+    else if (params.sortByPrice === 'desc') {
+      products.orderBy('product.price', Order.DESC);
+    }
+    if (params.searchByCategory) {
+      products.andWhere('category_id = :categoryId', {
+        categoryId: params.searchByCategory,
+      });
+    }
+    const [_, total] = await products.getManyAndCount();
+    const result = await products.getRawMany();
+    console.log('result', result);
+
+    const pageMetaDto = new PageMetaDto({
+      pageOptionsDto: params,
+      itemCount: total,
+    });
+
+    return new ResponsePaginate(result, pageMetaDto, 'Success');
+  }
 
 
-  async getAllproduct(params: GetProductParams) {
+  async getAllproduct(params: GetProductParams,) {
     const page = params.page || 1;
     const take = params.take || 6;
     console.log(page);
     console.log(take);
-    
+
     const skip = (page - 1) * take;
     const products = this.productRepository
       .createQueryBuilder('product')
@@ -72,7 +143,7 @@ export class ProductService {
       .select(['product.*', 'product.id as product_id', 'product.quantity_sold as product_quantity_sold', 'product.price as product_price'])
       .addSelect('AVG(reviews.rating)', 'avgRating')
       .addGroupBy('product.id')
-      .where('product.status = :status', { status: StatusEnum.ACTIVE })
+      .where('product.status = :status AND product.delete_At IS NULL', { status: StatusEnum.ACTIVE })
       .offset(skip)
       .limit(params.take)
       .orderBy('product.quantity_sold', Order.DESC)
@@ -143,6 +214,54 @@ export class ProductService {
       return new ResponseItem(responseData, 'Successfully!');
     } catch (error) {
       throw new NotFoundException('Product not found');
+    }
+  }
+
+
+  async updateProduct(
+    @Param('id') id: number,
+    @Body() updateProductDto: UpdateProductDto,
+    @UploadedFiles() files: Array<Express.Multer.File>,
+    @CurrentUser() user: User,
+  ): Promise<{ data: User | null, message: string, statusCode: number }> {
+    try {
+      const category = await this.categoryRepository.findOne({ where: { id: updateProductDto.category_id } });
+      if (!category) {
+        {
+          return {
+            message: "Category not found",
+            data: null,
+            statusCode: HttpStatus.NOT_FOUND,
+          }
+        }
+      }
+      const product = await this.productRepository.findOne({ where: { id: id } });
+      if (product.images) {
+        product.images = null;
+      }
+      product.product_name = updateProductDto.product_name;
+      product.price = updateProductDto.price;
+      product.description = updateProductDto.description;
+      product.brand = updateProductDto.brand;
+      product.quantity_inventory = updateProductDto.product_availability;
+      product.status = updateProductDto.status;
+      product.category = category;
+      if (files && files.length > 0) {
+        const cloudinaryResult = await this.cloudinaryService.uploadImages(files, 'product');
+        product.images = cloudinaryResult.map(item => item.secure_url);
+      }
+      await this.productRepository.save(product);
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'User updated successfully',
+        data: null,
+      };
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: 'Failed to update user' + error.message,
+        data: null,
+      };
     }
   }
 

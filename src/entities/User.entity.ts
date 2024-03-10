@@ -1,6 +1,6 @@
 import { IsBoolean, IsEmail, IsNotEmpty, IsNumber, IsOptional, IsPhoneNumber, IsString } from 'class-validator';
 import { PositionEnum ,StatusEnum } from 'src/common/enum/enums';
-import { PrimaryGeneratedColumn, Column, Entity, CreateDateColumn, OneToMany, ManyToMany, JoinTable } from 'typeorm';
+import { PrimaryGeneratedColumn, Column, Entity, CreateDateColumn, OneToMany, ManyToMany, JoinTable, OneToOne } from 'typeorm';
 import { Shop } from './shop.entity';
 import { ProductReview } from './ProductReviews.entity';
 import { Group } from './group.entity';
@@ -33,15 +33,15 @@ export class User {
   @IsOptional()
   address: string;
 
-  @Column({ type: 'text', array: true, default: '{}' })
+  @Column({ type: 'text', array: true, default: null })
   @IsOptional()
   image: string[];
-
+  
   
   @Column({ type: 'varchar', length: 255  ,nullable: true })
   @IsOptional()
   fcmToken: string;
-
+  
   @Column({
     type: 'enum',
     enum: PositionEnum,
@@ -64,8 +64,8 @@ export class User {
   @CreateDateColumn({ type: 'timestamp' })
   created_at: Date;
 
-  @OneToMany(() => Shop, (shop) => shop.user)
-  shops: Shop[]
+  @OneToOne(() => Shop, shop => shop.user) 
+  shop: Shop;
 
   @OneToMany(() => ProductReview , (productReviews) => productReviews.users)
   productReviews:  ProductReview [];
