@@ -43,13 +43,10 @@ export class UserService {
           data: null,
         };
       }
-      if (foundUser.image) {
-        foundUser.image = null;
-    }
       foundUser.username = updateUserDTO.username;
-      foundUser.email = updateUserDTO.email;
       foundUser.number_phone = updateUserDTO.number_phone;
       if (files && files.length > 0) {
+          foundUser.image = null; 
         const cloudinaryResult = await this.cloudinaryService.uploadImages(files, 'user');
         foundUser.image = cloudinaryResult.map(item => item.secure_url);
       }

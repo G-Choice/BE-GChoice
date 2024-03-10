@@ -18,6 +18,7 @@ import { CurrentUser } from '../guards/user.decorator';
 import { User } from 'src/entities/User.entity';
 import { Shop } from 'src/entities/shop.entity';
 import { UpdateProductDto } from './dto/update_product.dto';
+import { Group } from 'src/entities/group.entity';
 
 @Injectable()
 export class ProductService {
@@ -32,6 +33,8 @@ export class ProductService {
     private readonly productReviewRepository: Repository<ProductReview>,
     @InjectRepository(Shop)
     private readonly shopRepository: Repository<Shop>,
+    @InjectRepository(Group)
+    private readonly groupRepository: Repository<Group>,
     private readonly cloudinaryService: CloudinaryService,
   ) { }
 
@@ -218,52 +221,63 @@ export class ProductService {
   }
 
 
-  async updateProduct(
-    @Param('id') id: number,
-    @Body() updateProductDto: UpdateProductDto,
-    @UploadedFiles() files: Array<Express.Multer.File>,
-    @CurrentUser() user: User,
-  ): Promise<{ data: User | null, message: string, statusCode: number }> {
-    try {
-      const category = await this.categoryRepository.findOne({ where: { id: updateProductDto.category_id } });
-      if (!category) {
-        {
-          return {
-            message: "Category not found",
-            data: null,
-            statusCode: HttpStatus.NOT_FOUND,
-          }
-        }
-      }
-      const product = await this.productRepository.findOne({ where: { id: id } });
-      if (product.images) {
-        product.images = null;
-      }
-      product.product_name = updateProductDto.product_name;
-      product.price = updateProductDto.price;
-      product.description = updateProductDto.description;
-      product.brand = updateProductDto.brand;
-      product.quantity_inventory = updateProductDto.product_availability;
-      product.status = updateProductDto.status;
-      product.category = category;
-      if (files && files.length > 0) {
-        const cloudinaryResult = await this.cloudinaryService.uploadImages(files, 'product');
-        product.images = cloudinaryResult.map(item => item.secure_url);
-      }
-      await this.productRepository.save(product);
-      return {
-        statusCode: HttpStatus.OK,
-        message: 'User updated successfully',
-        data: null,
-      };
-    } catch (error) {
-      return {
-        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: 'Failed to update user' + error.message,
-        data: null,
-      };
-    }
-  }
+  // async updateProduct(
+  //   @Param('id') id: number,
+  //   @Body() updateProductDto: UpdateProductDto,
+  //   @UploadedFiles() files: Array<Express.Multer.File>,
+  //   @CurrentUser() user: User,
+  // ): Promise<{ data: User | null, message: string, statusCode: number }> {
+  //   try {
+  //     const category = await this.categoryRepository.findOne({ where: { id: updateProductDto.category_id } });
+  //     if (!category) {
+  //       {
+  //         return {
+  //           message: "Category not found",
+  //           data: null,
+  //           statusCode: HttpStatus.NOT_FOUND,
+  //         }
+  //       }
+  //     }
+  //     const product = await this.productRepository.findOne({ where: { id: id } });
+  //     if (updateProductDto.status === 'inactive') {
+  //       const activeGroups = await this.groupRepository.find({ where: { product: product, status: 'active' } });
+  //       if (activeGroups.length > 0) {
+  //         return {
+  //           message: "Product has active groups, cannot be updated to 'inactive'",
+  //           data: null,
+  //           statusCode: HttpStatus.BAD_REQUEST,
+  //         };
+  //       }
+  //     }
+  
+  //       if (product.images) {
+  //         product.images = null;
+  //       }
+  //     product.product_name = updateProductDto.product_name;
+  //     product.price = updateProductDto.price;
+  //     product.description = updateProductDto.description;
+  //     product.brand = updateProductDto.brand;
+  //     product.quantity_inventory = updateProductDto.product_availability;
+  //     product.status = updateProductDto.status;
+  //     product.category = category;
+  //     if (files && files.length > 0) {
+  //       const cloudinaryResult = await this.cloudinaryService.uploadImages(files, 'product');
+  //       product.images = cloudinaryResult.map(item => item.secure_url);
+  //     }
+  //     await this.productRepository.save(product);
+  //     return {
+  //       statusCode: HttpStatus.OK,
+  //       message: 'User updated successfully',
+  //       data: null,
+  //     };
+  //   } catch (error) {
+  //     return {
+  //       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+  //       message: 'Failed to update user' + error.message,
+  //       data: null,
+  //     };
+  //   }
+  // }
 
 
 }

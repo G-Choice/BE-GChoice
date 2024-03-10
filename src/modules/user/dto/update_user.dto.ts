@@ -11,13 +11,6 @@ export class UpdateUserDTO{
     username: string;
 
     @ApiProperty({
-        description: "User's email",
-        example: 'email@example.com',
-    })
-    @IsNotEmpty()
-    email: string; 
-
-    @ApiProperty({
         description: "User's phone number",
         example: '1234567890',
     })
