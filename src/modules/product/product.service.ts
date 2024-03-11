@@ -103,7 +103,7 @@ export class ProductService {
       .addSelect('category.category_name AS category_name')
       .offset(skip)
       .limit(params.take)
-      .orderBy('product. created_at', Order.DESC) 
+      .orderBy('product. created_at', Order.DESC)
     if (params.searchByName) {
       products.andWhere('LOWER(product.product_name) LIKE LOWER(:productName)', {
         productName: `%${params.searchByName}%`,
@@ -221,63 +221,85 @@ export class ProductService {
   }
 
 
-  // async updateProduct(
-  //   @Param('id') id: number,
-  //   @Body() updateProductDto: UpdateProductDto,
-  //   @UploadedFiles() files: Array<Express.Multer.File>,
-  //   @CurrentUser() user: User,
-  // ): Promise<{ data: User | null, message: string, statusCode: number }> {
-  //   try {
-  //     const category = await this.categoryRepository.findOne({ where: { id: updateProductDto.category_id } });
-  //     if (!category) {
-  //       {
-  //         return {
-  //           message: "Category not found",
-  //           data: null,
-  //           statusCode: HttpStatus.NOT_FOUND,
-  //         }
-  //       }
-  //     }
-  //     const product = await this.productRepository.findOne({ where: { id: id } });
-  //     if (updateProductDto.status === 'inactive') {
-  //       const activeGroups = await this.groupRepository.find({ where: { product: product, status: 'active' } });
-  //       if (activeGroups.length > 0) {
-  //         return {
-  //           message: "Product has active groups, cannot be updated to 'inactive'",
-  //           data: null,
-  //           statusCode: HttpStatus.BAD_REQUEST,
-  //         };
-  //       }
-  //     }
-  
-  //       if (product.images) {
-  //         product.images = null;
-  //       }
-  //     product.product_name = updateProductDto.product_name;
-  //     product.price = updateProductDto.price;
-  //     product.description = updateProductDto.description;
-  //     product.brand = updateProductDto.brand;
-  //     product.quantity_inventory = updateProductDto.product_availability;
-  //     product.status = updateProductDto.status;
-  //     product.category = category;
-  //     if (files && files.length > 0) {
-  //       const cloudinaryResult = await this.cloudinaryService.uploadImages(files, 'product');
-  //       product.images = cloudinaryResult.map(item => item.secure_url);
-  //     }
-  //     await this.productRepository.save(product);
-  //     return {
-  //       statusCode: HttpStatus.OK,
-  //       message: 'User updated successfully',
-  //       data: null,
-  //     };
-  //   } catch (error) {
-  //     return {
-  //       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-  //       message: 'Failed to update user' + error.message,
-  //       data: null,
-  //     };
-  //   }
-  // }
+  async updateProduct(
+    @Param('id') id: number,
+    @Body() updateProductDto: UpdateProductDto,
+    @UploadedFiles() files: Array<Express.Multer.File>,
+    @CurrentUser() user: User,
+  ): Promise<{ data: Product | null, message: string, statusCode: number }> {
+    try {
+      const Shop = await this.shopRepository.findOne({ where: { user: { id: user.id } } });
+      const category = await this.categoryRepository.findOne({ where: { id: updateProductDto.category_id } });
+      if (!category) {
+        {
+          return {
+            message: "Category not found",
+            data: null,
+            statusCode: HttpStatus.NOT_FOUND,
+          }
+        }
+      }
+      const product = await this.productRepository.findOne({ where: { id: id } });
+      if (product.shop.id !== Shop.id) {
+        return {
+          statusCode: HttpStatus.FORBIDDEN,
+          message: "You don't have permission to update this product",
+          data: null,
+        };
+      }
+      if (updateProductDto.status === 'inactive') {
+        const activeGroups = await this.groupRepository.find({ where: { products: { id: id }, status: 'active' } });
+        if (activeGroups.length > 0) {
+          return {
+            message: "Product has active groups, cannot be updated to 'inactive'",
+            data: null,
+            statusCode: HttpStatus.BAD_REQUEST,
+          };
+        }
+      }
+      product.product_name = updateProductDto.product_name;
+      product.price = updateProductDto.price;
+      product.description = updateProductDto.description;
+      product.brand = updateProductDto.brand;
+      product.quantity_inventory = updateProductDto.product_availability;
+      product.status = updateProductDto.status;
+      product.category = category;
+      if (files && files.length > 0) {
+        const cloudinaryResult = await this.cloudinaryService.uploadImages(files, 'product');
+        product.images = cloudinaryResult.map(item => item.secure_url);
+      }
+      await this.productRepository.save(product);
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Product updated successfully',
+        data: product,
+      };
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: 'Failed to update user' + error.message,
+        data: null,
+      };
+    }
+  }
 
+
+  async deleteProduct(@Param('id') id: number, @CurrentUser() user: User): Promise<{ message: string, data: Product | null, statusCode: number }> {
+    try {  
+      const shop = await this.shopRepository.findOne({ where: { user: { id: user.id } } });
+      const product = await this.productRepository.findOne({ where: { id: id, shop: { id: shop.id } } });
+      if (!product) {
+        throw new NotFoundException('Product not found');
+      }     
+      if (product.status !== 'inactive') {
+        return { message: 'Cannot delete product with status other than "inactive"', data: null, statusCode: HttpStatus.BAD_REQUEST };
+      }
+      await this.productRepository.remove(product);
+      return { message: 'Delete category successfully!', data: null, statusCode: HttpStatus.OK };
+    } catch (error) {
+      console.error('Error deleting product:', error.message);
+      return { message: error.message, data: null, statusCode: HttpStatus.INTERNAL_SERVER_ERROR };
+    }
+  }
 
 }

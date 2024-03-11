@@ -1,6 +1,7 @@
 import {
     Body,
     Controller,
+    Delete,
     FileTypeValidator,
     Get,
     InternalServerErrorException,
@@ -64,15 +65,28 @@ export class ProductController {
         return this.productService.getProductDetail(id);
     }
 
-    // @Patch(':id')
-    // @UseGuards(AuthGuard)
-    // @UseInterceptors(FilesInterceptor('files', 5))
-    // updateProduct(
-    //     @Param('id') id: number,
-    //     @Body() updateProductDto: UpdateProductDto,
-    //     @UploadedFiles() files: Array<Express.Multer.File>,
-    //     @CurrentUser() user :User,
-    // ): Promise<{ data: Product | null, message: string, statusCode: number }> {
-    //     return this.productService.updateProduct(id,updateProductDto,files,user)
-    // }
+    @Patch(':id')
+    @UseGuards(AuthGuard)
+    @UseInterceptors(FilesInterceptor('files', 5))
+    async updateProduct(
+        @Param('id') id: number,
+        @Body() updateProductDto: UpdateProductDto,
+        @UploadedFiles() files: Array<Express.Multer.File>,
+        @CurrentUser() user :User,
+    ): Promise<{ data: Product | null, message: string, statusCode: number }> {
+        const result = await this.productService.updateProduct(id,updateProductDto,files,user);
+        return result;
+    }
+
+
+    @Delete(':id')
+    @UseGuards(AuthGuard)
+    async deteteProduct(
+        @Param('id') id: number,
+        @CurrentUser() user: User
+    ): Promise<{ message: string, data: Product| null, statusCode: number }> {
+        return this.productService.deleteProduct(id, user);
+    }
+
+
 } 

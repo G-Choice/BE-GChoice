@@ -46,7 +46,6 @@ export class UserService {
       foundUser.username = updateUserDTO.username;
       foundUser.number_phone = updateUserDTO.number_phone;
       if (files && files.length > 0) {
-          foundUser.image = null; 
         const cloudinaryResult = await this.cloudinaryService.uploadImages(files, 'user');
         foundUser.image = cloudinaryResult.map(item => item.secure_url);
       }

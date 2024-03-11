@@ -46,6 +46,7 @@ export class CategoryService {
 
     async deleteCategory(@Param() id: number, @CurrentUser() user: User): Promise<{ message: string, data: Category | null, statusCode: number }> {
         try {
+            const Shop = await this.shopRepository.findOne({ where: { user: { id: user.id } } });
             const activeProductsCount = await this.productRepository.count({
                 where: { category: { id: id }, status: 'active' }
             });
@@ -54,7 +55,7 @@ export class CategoryService {
                 throw new Error('Cannot delete category: Active products still exist');
             }
 
-            const category = await this.categoryRepository.findOne({ where: { id: id } });
+            const category = await this.categoryRepository.findOne({ where: { id: id, shop: { id: Shop.id } } });
             if (!category) {
                 throw new Error('Category not found');
             }
@@ -81,10 +82,10 @@ export class CategoryService {
                     message: "Shop not found",
                     data: null,
                     statusCode: HttpStatus.NOT_FOUND,
-                }
-            }       
+                }   
+            }
             const category = await this.categoryRepository.findOne({ where: { id: id, shop: { id: shop.id } } });
-            
+
             category.category_name = updateCategoryDTO.category_name;
             const updatedCategory = await this.categoryRepository.save(category);
             return {
@@ -97,7 +98,7 @@ export class CategoryService {
                 statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
                 message: 'Failed to update user' + error.message,
                 data: null,
-              };        
+            };
         }
     }
 }
