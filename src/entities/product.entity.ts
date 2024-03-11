@@ -1,4 +1,4 @@
-import {  IsEnum, IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsNumber, IsString } from 'class-validator';
 import { PositionEnum, StatusEnum } from 'src/common/enum/enums';
 import { PrimaryGeneratedColumn, Column, Entity, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, OneToMany, ManyToOne, JoinColumn } from 'typeorm';
 import { ProductReview } from './ProductReviews.entity';
@@ -14,7 +14,7 @@ export class Product {
   id: number;
 
   @Column()
-  @IsString() 
+  @IsString()
   @IsNotEmpty()
   product_name: string;
 
@@ -33,7 +33,7 @@ export class Product {
   @IsString()
   description: string;
 
-  @Column({ type: 'text', array: true, default: '{}' })
+  @Column({ type: 'text', array: true, default: null })
   images: string[];
   @Column()
   @IsString()
@@ -43,26 +43,28 @@ export class Product {
   @IsNumber()
   quantity_sold: number;
 
-  @Column({ default: 0 })
+  @Column()
   @IsNumber()
   quantity_inventory: number;
 
-  @CreateDateColumn({type:"timestamp"})
+  @CreateDateColumn({ type: "timestamp" })
   created_at: Date;
 
 
   @DeleteDateColumn({ nullable: true })
   delete_At: Date;
 
-  
+
   @OneToMany(() => ProductReview, review => review.product)
   reviews: ProductReview[];
 
-  @ManyToOne(() => Category, category => category.product)
+  @ManyToOne(() => Category, category => category.product, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'category_id' })
-  category:Category
+  category: Category
 
-  @ManyToOne(() => Shop, shop => shop.products)
+  @ManyToOne(() => Shop, shop => shop.products, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'shop_id' })
   shop: Shop;
 
@@ -72,7 +74,7 @@ export class Product {
   @OneToMany(() => ProductDiscount, discount => discount.products)
   discounts: ProductDiscount[];
 
-  @OneToMany(() =>  Group,  group => group.products)
+  @OneToMany(() => Group, group => group.products)
   groups: Group[];
 
   // @OneToMany(() => Carts, carts => carts.products)

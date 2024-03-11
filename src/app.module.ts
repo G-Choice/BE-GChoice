@@ -9,7 +9,8 @@ import { ProductDiscountModule } from './modules/product-discount/product-discou
 import { GruopsModule } from './modules/gruops/groups.module';
 import { FirebaseModule } from './firebase/firebase.module';
 import { ScheduleModule } from '@nestjs/schedule';
-
+import { CategoryModule } from './modules/category/category.module';
+import { ShopModule } from './modules/shop/shop.module';
 
 
 
@@ -23,7 +24,9 @@ import { ScheduleModule } from '@nestjs/schedule';
     ProductModule,
     ProductDiscountModule,
     GruopsModule,
-    FirebaseModule
+    FirebaseModule,
+    CategoryModule,
+    ShopModule
 
   ],
   controllers: [],
