@@ -1,7 +1,7 @@
 import { Body, HttpStatus, Injectable, Param } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Category } from 'src/entities/category.entity';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { CurrentUser } from '../guards/user.decorator';
 import { User } from 'src/entities/User.entity';
 import { Shop } from 'src/entities/shop.entity';
@@ -45,17 +45,15 @@ export class CategoryService {
     }
 
     async deleteCategory(@Param() id: number, @CurrentUser() user: User): Promise<{ message: string, data: Category | null, statusCode: number }> {
-        try {
-            const Shop = await this.shopRepository.findOne({ where: { user: { id: user.id } } });
+        try {  
+            const shop = await this.shopRepository.findOne({ where: { user: { id: user.id } } });         
             const activeProductsCount = await this.productRepository.count({
-                where: { category: { id: id }, status: 'active' }
-            });
-
+                where: { category: { id: id },  status: In(['active', 'maintaining']), shop: { id: shop.id } }
+             });
             if (activeProductsCount > 0) {
                 throw new Error('Cannot delete category: Active products still exist');
             }
-
-            const category = await this.categoryRepository.findOne({ where: { id: id, shop: { id: Shop.id } } });
+            const category = await this.categoryRepository.findOne({ where: { id: id, shop: { id: shop.id } } });
             if (!category) {
                 throw new Error('Category not found');
             }
