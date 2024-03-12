@@ -38,7 +38,7 @@ export class User {
   image: string[];
   
   
-  @Column({ type: 'varchar', length: 255  , default: null })
+  @Column({ type: 'varchar', length: 255  ,default: null})
   @IsOptional()
   fcmToken: string;
   

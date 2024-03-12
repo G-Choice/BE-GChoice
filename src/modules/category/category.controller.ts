@@ -39,7 +39,7 @@ export class CategoryController {
         return result;
     }
 
-    @Delete()
+    @Delete(':id')
     @UseGuards(AuthGuard)
     async deteteCategory(
         @Param('id') id: number,
