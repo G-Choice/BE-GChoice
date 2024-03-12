@@ -71,11 +71,11 @@ export class CategoryService {
 
 
     async updateCategory(
-        @Param() id: number,
+        @Param('id')id: number,
         @CurrentUser() user: User,
         @Body() updateCategoryDTO: UpdateCategoryDTO
     ): Promise<{ message: string, data: Category, statusCode: number }> {
-        try {
+        try {         
             const shop = await this.shopRepository.findOne({ where: { user: { id: user.id } } });
             if (!shop) {
                 return {

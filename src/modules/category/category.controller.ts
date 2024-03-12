@@ -28,7 +28,7 @@ export class CategoryController {
         return this.categoryService.createCategory(createCategoryDto, user);
     }
 
-    @Patch()
+    @Patch(':id')
     @UseGuards(AuthGuard)
     async updateUser(
         @Param('id') id: number,
