@@ -33,8 +33,9 @@ export class UserService {
   }
 
 
-  async updateUser(files: Array<Express.Multer.File>, user: User, updateUserDTO: UpdateUserDTO): Promise<{ data: User | null, message: string, statusCode: number }> {
+  async updateUser(file: Express.Multer.File, user: User, updateUserDTO: UpdateUserDTO): Promise<{ data: User | null, message: string, statusCode: number }> {
     try {
+      
       const foundUser = await this.userRepository.findOne({ where: { id: user.id }});
       if (!foundUser) {
         return {
@@ -45,10 +46,11 @@ export class UserService {
       }
       foundUser.username = updateUserDTO.username;
       foundUser.number_phone = updateUserDTO.number_phone;
-      if (files && files.length > 0) {
-        const cloudinaryResult = await this.cloudinaryService.uploadImages(files, 'user');
+      if (file) {
+        const cloudinaryResult = await this.cloudinaryService.uploadImages([file], 'user');
         foundUser.image = cloudinaryResult.map(item => item.secure_url);
       }
+
       await this.userRepository.save(foundUser);
       return {
         statusCode: HttpStatus.OK,

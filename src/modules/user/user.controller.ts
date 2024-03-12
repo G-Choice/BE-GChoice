@@ -1,10 +1,10 @@
-import { Body, Controller, Get, Patch, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, Patch, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { UserService } from './user.service';
 import { User } from 'src/entities/User.entity';
 import { CurrentUser } from '../guards/user.decorator';
 import { AuthGuard } from '../guards/auth.guard';
 import { UpdateUserDTO } from './dto/update_user.dto';
-import { FilesInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('user')
 export class UserController {
@@ -25,10 +25,11 @@ export class UserController {
     }
 
     @Patch()
-    @UseInterceptors(FilesInterceptor('files', 5))
+    // @UseInterceptors(FilesInterceptor('files', 5))
+    @UseInterceptors(FileInterceptor('file', { limits: { fieldSize: 20000 * 1024 * 1024 }}))
     @UseGuards(AuthGuard)
-    async updateUser(  @UploadedFiles() files: Array<Express.Multer.File>,@CurrentUser() user: User, @Body()updateUserDTO :UpdateUserDTO ): Promise<{ message: string, data?: User }> {
-      const result = await this.userService.updateUser(files, user,updateUserDTO);
+    async updateUser(  @UploadedFile() file: Express.Multer.File,@CurrentUser() user: User, @Body()updateUserDTO :UpdateUserDTO ): Promise<{ message: string, data?: User }> {
+      const result = await this.userService.updateUser(file, user,updateUserDTO);
       return result;
     }
 }
