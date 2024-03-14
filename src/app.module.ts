@@ -11,6 +11,7 @@ import { FirebaseModule } from './firebase/firebase.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { CategoryModule } from './modules/category/category.module';
 import { ShopModule } from './modules/shop/shop.module';
+import { PaymentModule } from './modules/payment/payment.module';
 
 
 
@@ -26,7 +27,8 @@ import { ShopModule } from './modules/shop/shop.module';
     GruopsModule,
     FirebaseModule,
     CategoryModule,
-    ShopModule
+    ShopModule,
+    PaymentModule
 
   ],
   controllers: [],

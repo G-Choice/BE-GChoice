@@ -4,8 +4,9 @@ import { PrimaryGeneratedColumn, Column, Entity, CreateDateColumn, OneToMany, Ma
 import { Shop } from './shop.entity';
 import { ProductReview } from './ProductReviews.entity';
 import { Group } from './group.entity';
-import { Cart_user } from './cart_user.entyti';
+// import { Cart_user } from './cart_user.entyti';
 import { User_group } from './user_group.entity';
+import { Group_user_product } from './group_user_product.entity';
 
 @Entity('users')
 export class User {
@@ -78,8 +79,15 @@ export class User {
     {onDelete: 'NO ACTION', onUpdate: 'NO ACTION',},
   )
   groups?: Group[];
-  @OneToMany(() => Cart_user, cart_user => cart_user.users)
-  cart_users: Cart_user[];
+
+  // @OneToMany(() => Cart_user, cart_user => cart_user.users)
+  // cart_users: Cart_user[];
+
+
+  @OneToMany(() => Group_user_product, group_user_product => group_user_product.users)
+  group_user_products: Group_user_product[];
+
+
 
   @OneToMany(() =>  User_group, user_group =>  user_group .users)
   user_groups: User_group[];

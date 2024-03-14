@@ -1,40 +1,41 @@
 import { Column, Entity, JoinColumn, ManyToOne, PrimaryColumn, PrimaryGeneratedColumn } from "typeorm";
 import { User } from "./User.entity";
 import { Group } from "./group.entity";
-import { PositionGroupEnum } from "src/common/enum/enums";
-import { Carts } from "./cart.entity";
-
-@Entity('cart_user')
-export class Cart_user {
+@Entity('group_user_product')
+export class Group_user_product {
 
     @PrimaryGeneratedColumn()
     id: number;
 
     @PrimaryColumn()
-    cart_id: number;
+    group_id: number;
 
     @PrimaryColumn()
     user_id: number;
 
     @Column()
     quantity: number;
-  
-    @Column({default: 0})
+
+    @Column({ default: 0 })
     price: number;
+
+
+    @Column({ default: false })
+    isPayment: boolean;
 
     @ManyToOne(
         () => User,
-        user => user.cart_users,
+        user => user.group_user_products,
         { onDelete: 'NO ACTION', onUpdate: 'NO ACTION' }
     )
     @JoinColumn([{ name: 'user_id', referencedColumnName: 'id' }])
-    users: User[];
+    users: User;
 
     @ManyToOne(
-        () => Carts,
-        carts => carts.cart_users,
+        () => Group,
+        groups => groups.group_user_products,
         { onDelete: 'NO ACTION', onUpdate: 'NO ACTION' }
     )
-    @JoinColumn([{ name: 'cart_id', referencedColumnName: 'id' }])
-    carts: Carts[];
+    @JoinColumn([{ name: 'group_id', referencedColumnName: 'id' }])
+    groups: Group;
 }

@@ -7,17 +7,17 @@ import { User_group } from 'src/entities/user_group.entity';
 import { User } from 'src/entities/User.entity';
 import { Product } from 'src/entities/product.entity';
 import { addHours } from 'date-fns';
-import { PositionEnum, PositionGroupEnum } from 'src/common/enum/enums';
+import { PositionEnum, PositionGroupEnum, PositionStatusGroupEnum } from 'src/common/enum/enums';
 import { CurrentUser } from '../guards/user.decorator';
 import { ResponseItem } from 'src/common/dtos/responseItem';
 import { JoinGroupDto } from './dto/join_group.dto';
-import { Carts } from 'src/entities/cart.entity';
-import { Cart_user } from 'src/entities/cart_user.entyti';
+// import { Carts } from 'src/entities/cart.entity';
+// import { Cart_user } from 'src/entities/cart_user.entyti';
 import { ProductDiscount } from 'src/entities/product_discount.entity';
 import { FirebaseRepository } from 'src/firebase/firebase.service';
 import * as admin from 'firebase-admin';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { response } from 'express';
+import { Group_user_product } from 'src/entities/group_user_product.entity';
 
 @Injectable()
 export class GruopsService {
@@ -30,10 +30,12 @@ export class GruopsService {
     private readonly usergroupRepository: Repository<User_group>,
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
-    @InjectRepository(Carts)
-    private readonly cartsRepository: Repository<Carts>,
-    @InjectRepository(Cart_user)
-    private readonly cart_userRepository: Repository<Cart_user>,
+    // @InjectRepository(Carts)
+    // private readonly cartsRepository: Repository<Carts>,
+    // @InjectRepository(Cart_user)
+    // private readonly cart_userRepository: Repository<Cart_user>,
+    @InjectRepository(Group_user_product)
+    private readonly group_user_productRepository: Repository<Group_user_product>,
     @InjectRepository(ProductDiscount)
     private readonly ProductDiscountRepository: Repository<ProductDiscount>,
     private readonly firebaseRepository: FirebaseRepository
@@ -45,8 +47,8 @@ export class GruopsService {
     const groupsByProductId = await this.groupRepository
       .createQueryBuilder('group')
       .addSelect('group.groupTime')
-      .leftJoin('group.carts', 'carts')
-      .addSelect('carts.total_quantity')
+      // .leftJoin('group.carts', 'carts')
+      // .addSelect('carts.total_quantity')
       .leftJoin('group.users', 'users', 'users.id = :userId', { userId: user.id })
       .addSelect('users.id')
       .where('group.product_id = :product_id', { product_id: product_id })
@@ -72,26 +74,36 @@ export class GruopsService {
     return new ResponseItem(groupsWithRemainingTime, 'Successfully!');
 
   }
-  async getCartGroups(group_id: number): Promise<any> {
+  async getCartGroups(group_id: number, @CurrentUser() user: User): Promise<any> {
     const currentTimestamp = new Date().getTime();
-
-    const findCart = await this.cartsRepository.findOne({ where: { groups: { id: group_id } } });
-    const productByGroup = await this.productRepository.findOne({ where: { groups: { id: group_id } } });
     const group = await this.groupRepository.findOne({ where: { id: group_id } });
+    const productByGroup = await this.productRepository.findOne({ where: { groups: { id: group_id } } });
+    // const group = await this.groupRepository.findOne({ where: { id: group_id } });
     let remainingHours = (group.groupTime.getTime() - currentTimestamp) / (1000 * 60 * 60);
     if (remainingHours < 0) {
       remainingHours = 0;
     }
 
-    const cartGroups = await this.cart_userRepository
-      .createQueryBuilder('cart_user')
-      .leftJoin('cart_user.users', 'users')
+    const ItemGroups = await this.group_user_productRepository
+      .createQueryBuilder('group_user_product')
+      .leftJoin('group_user_product.users', 'users')
       .addSelect(['users.id', 'users.username', 'users.email', 'users.image', 'users.address'])
-      .where('cart_user.cart_id = :cartId', { cartId: findCart.id })
+      .where('group_user_product.group_id = :groupId', { groupId: group.id })
       .getMany();
-    const totalPrice = cartGroups.reduce((total, group) => total + group.price, 0);
+
+    let totalPrice = await this.group_user_productRepository
+      .createQueryBuilder('group_user_product')
+      .addSelect('group_user_product.price')
+      .where('group_user_product.group_id = :groupId', { groupId: group.id })
+      .andWhere('group_user_product.user_id = :userId', { userId: user.id })
+      .getOne();
+
+    if (!totalPrice) {
+      totalPrice = null;
+    }
+
     return {
-      data: cartGroups,
+      data: ItemGroups,
       totalPrice,
       remainingHours,
       productByGroup,
@@ -131,16 +143,17 @@ export class GruopsService {
           description: data.description,
           groupSize: data.group_size,
           groupTime: addHours(new Date(), data.hours),
+          status: PositionStatusGroupEnum.WAITING_FOR_USER,
+          // total_price :0,
+          total_quantity: data.quantity_product,
           products: product,
         });
-
         const savedGroup = await this.groupRepository.save(newGroup);
-
-        const newCart = new Carts();
-        newCart.total_price = 0;
-        newCart.total_quantity = data.quantity_product;
-        newCart.groups = savedGroup;
-        await this.cartsRepository.save(newCart);
+        // const newCart = new Carts();
+        // newCart.total_price = 0;
+        // newCart.total_quantity = data.quantity_product;
+        // newCart.groups = savedGroup;
+        // await this.cartsRepository.save(newCart);
 
         const newUserGroup = this.usergroupRepository.create({
           user_id: user.id,
@@ -164,21 +177,21 @@ export class GruopsService {
               break;
             }
           }
-          const newCart_user = new Cart_user();
-          newCart_user.cart_id = newCart.id;
-          newCart_user.user_id = user.id;
-          newCart_user.quantity = data.quantity_product;
-          newCart_user.price = (product.price - (product.price * discountPercentage / 100)) * data.quantity_product;
-          await this.cart_userRepository.save(newCart_user);
+          const newGroup_user_product = new Group_user_product();
+          newGroup_user_product.group_id = savedGroup.id;
+          newGroup_user_product.user_id = user.id;
+          newGroup_user_product.quantity = data.quantity_product;
+          newGroup_user_product.price = (product.price - (product.price * discountPercentage / 100)) * data.quantity_product;
+          await this.group_user_productRepository.save(newGroup_user_product);
 
 
         } else {
-          const newCart_user = new Cart_user();
-          newCart_user.cart_id = newCart.id;
-          newCart_user.user_id = user.id;
-          newCart_user.quantity = data.quantity_product;
-          newCart_user.price = product.price * data.quantity_product;
-          await this.cart_userRepository.save(newCart_user);
+          const newGroup_user_product = new Group_user_product();
+          newGroup_user_product.group_id = savedGroup.id;
+          newGroup_user_product.user_id = user.id;
+          newGroup_user_product.quantity = data.quantity_product;
+          newGroup_user_product.price = product.price * data.quantity_product;
+          await this.group_user_productRepository.save(newGroup_user_product);
         }
         return {
           message: 'Group created successfully!',
@@ -224,9 +237,9 @@ export class GruopsService {
       newUserGroup.user_id = user.id;
       newUserGroup.role = PositionGroupEnum.MEMBER;
       await this.usergroupRepository.save(newUserGroup);
-      const findCart = await this.cartsRepository.findOne({ where: { groups: { id: joinGroupDto.group_id } } });
-      findCart.total_quantity += joinGroupDto.quantity_product;
-      await this.cartsRepository.save(findCart);
+      const findGroup = await this.groupRepository.findOne({ where: { id: joinGroupDto.group_id } });
+      findGroup.total_quantity += joinGroupDto.quantity_product;
+      await this.groupRepository.save(findGroup);
 
       // const product = await this.productRepository.findOne({
       //   where: {
@@ -246,30 +259,31 @@ export class GruopsService {
         product_discounts.sort((a, b) => b.minQuantity - a.minQuantity);
         let discountPercentage = 0;
         for (const discount of product_discounts) {
-          if (findCart.total_quantity >= discount.minQuantity) {
+          if (findGroup.total_quantity >= discount.minQuantity) {
             discountPercentage = parseFloat(discount.discountPercentage);
             break;
           }
         }
-        const newCart_user = new Cart_user();
-        newCart_user.cart_id = findCart.id;
-        newCart_user.user_id = user.id;
-        newCart_user.quantity = joinGroupDto.quantity_product;
-        newCart_user.price = (product.price - (product.price * discountPercentage / 100)) * joinGroupDto.quantity_product;
-        await this.cart_userRepository.save(newCart_user);
 
-        const cart_users = await this.cart_userRepository.find({ where: { cart_id: findCart.id } })
-        for (const cart_user of cart_users) {
-          cart_user.price = (product.price - (product.price * discountPercentage / 100)) * cart_user.quantity;
-          await this.cart_userRepository.save(cart_user);
+        const newGroup_user_product = new Group_user_product();
+        newGroup_user_product.group_id = findGroup.id;
+        newGroup_user_product.user_id = user.id;
+        newGroup_user_product.quantity = joinGroupDto.quantity_product;
+        newGroup_user_product.price = (product.price - (product.price * discountPercentage / 100)) * joinGroupDto.quantity_product;
+        await this.group_user_productRepository.save(newGroup_user_product);
+
+        const item_groups = await this.group_user_productRepository.find({ where: { group_id: findGroup.id } })
+        for (const item_group of item_groups) {
+          item_group.price = (product.price - (product.price * discountPercentage / 100)) * item_group.quantity;
+          await this.group_user_productRepository.save(item_group);
         }
       } else {
-        const newCart_user = new Cart_user();
-        newCart_user.cart_id = findCart.id;
-        newCart_user.user_id = user.id;
-        newCart_user.quantity = joinGroupDto.quantity_product;
-        newCart_user.price = product.price * joinGroupDto.quantity_product;
-        await this.cart_userRepository.save(newCart_user);
+        const newGroup_user_product = new Group_user_product();
+        newGroup_user_product.group_id = findGroup.id;
+        newGroup_user_product.user_id = user.id;
+        newGroup_user_product.quantity = joinGroupDto.quantity_product;
+        newGroup_user_product.price = product.price * joinGroupDto.quantity_product;
+        await this.group_user_productRepository.save(newGroup_user_product);
       }
       return {
         message: 'Joined group successfully',
@@ -286,17 +300,15 @@ export class GruopsService {
   @Cron(CronExpression.EVERY_MINUTE)
   async checkAndProcessExpiredGroups() {
     const now = new Date().getTime();
-    const groups = await this.groupRepository.find({ where: { status: null } });
+    const groups = await this.groupRepository.find({ where: { status: PositionStatusGroupEnum.WAITING_FOR_USER } });
     for (const group of groups) {
       const user_group = await this.usergroupRepository.find({ where: { group_id: group.id } });
       const userIds = user_group.map(userGroup => userGroup.user_id);
       const users = await this.userRepository.find({ where: { id: In(userIds) } });
-      const cart = await this.cartsRepository.findOne({ where: { groups: { id: group.id } } });
       const product = await this.productRepository.findOne({ where: { groups: { id: group.id } } });
       if (group.groupTime.getTime() < now) {
-        if (cart.total_quantity < group.groupSize) {
-          await this.cart_userRepository.delete({ carts: { id: cart.id } });
-          await this.cartsRepository.delete({ groups: { id: group.id } });
+        if (group.total_quantity < group.groupSize) {
+          await this.group_user_productRepository.delete({ groups: { id: group.id } });
           await this.usergroupRepository.delete({ group_id: group.id });
           await this.groupRepository.delete(group.id);
           for (const user of users) {
@@ -307,12 +319,13 @@ export class GruopsService {
         }
       }
       else {
-        if (cart.total_quantity >= group.groupSize) {
-          await this.groupRepository.update(group.id, { status: "OKE" });
+        if (group.total_quantity >= group.groupSize) {
+          await this.groupRepository.update(group.id, { status: PositionStatusGroupEnum.WAITING_FOR_PAYMENT });
           for (const user of users) {
             await this.firebaseRepository.sendPushNotification(user.fcmToken, { title: 'G-Choice notification', body: `The group ${product.product_name} has enough participants. Please confirm your order.` });
           }
         }
+
       }
     }
   }

@@ -6,16 +6,13 @@ import { GruopsController } from './groups.controller';
 import { GruopsService } from './groups.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Group } from 'src/entities/group.entity';
-import { Carts } from 'src/entities/cart.entity';
-import { Cart_user } from 'src/entities/cart_user.entyti';
 import { ProductDiscount } from 'src/entities/product_discount.entity';
 import { FirebaseModule } from 'src/firebase/firebase.module';
-
-
+import { Group_user_product } from 'src/entities/group_user_product.entity';
 
 @Module({
     imports: [
-      TypeOrmModule.forFeature([Product,User_group,User,Group,Carts,Cart_user,ProductDiscount]),
+      TypeOrmModule.forFeature([Product,User_group,User,Group,ProductDiscount,Group_user_product]),
       FirebaseModule
     ],
     controllers:[GruopsController],

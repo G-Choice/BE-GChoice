@@ -6,7 +6,7 @@ import { Category } from './category.entity';
 import { Shop } from './shop.entity';
 import { ProductDiscount } from './product_discount.entity';
 import { Group } from './group.entity';
-import { Carts } from './cart.entity';
+// import { Carts } from './cart.entity';
 
 @Entity('products')
 export class Product {
