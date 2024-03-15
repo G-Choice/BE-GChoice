@@ -15,9 +15,18 @@ export class User_group {
   @PrimaryColumn()
   user_id: number;
 
-  @Column({ type:'enum',enum:PositionGroupEnum ,default: null })
+  @Column({ type: 'enum', enum: PositionGroupEnum, default: null })
   @IsNotEmpty()
   role: string;
+  @Column()
+  quantity: number;
+
+  @Column({ default: 0 })
+  price: number;
+
+
+  @Column({ default: false })
+  isPayment: boolean;
 
   @ManyToOne(
     () => User,

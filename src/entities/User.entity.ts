@@ -6,7 +6,7 @@ import { ProductReview } from './ProductReviews.entity';
 import { Group } from './group.entity';
 // import { Cart_user } from './cart_user.entyti';
 import { User_group } from './user_group.entity';
-import { Group_user_product } from './group_user_product.entity';
+// import { Group_user_product } from './group_user_product.entity';
 
 @Entity('users')
 export class User {
@@ -84,8 +84,8 @@ export class User {
   // cart_users: Cart_user[];
 
 
-  @OneToMany(() => Group_user_product, group_user_product => group_user_product.users)
-  group_user_products: Group_user_product[];
+  // @OneToMany(() => Group_user_product, group_user_product => group_user_product.users)
+  // group_user_products: Group_user_product[];
 
 
 

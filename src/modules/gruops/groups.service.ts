@@ -17,7 +17,7 @@ import { ProductDiscount } from 'src/entities/product_discount.entity';
 import { FirebaseRepository } from 'src/firebase/firebase.service';
 import * as admin from 'firebase-admin';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { Group_user_product } from 'src/entities/group_user_product.entity';
+// import { Group_user_product } from 'src/entities/group_user_product.entity';
 
 @Injectable()
 export class GruopsService {
@@ -34,8 +34,8 @@ export class GruopsService {
     // private readonly cartsRepository: Repository<Carts>,
     // @InjectRepository(Cart_user)
     // private readonly cart_userRepository: Repository<Cart_user>,
-    @InjectRepository(Group_user_product)
-    private readonly group_user_productRepository: Repository<Group_user_product>,
+    // @InjectRepository(Group_user_product)
+    // private readonly group_user_productRepository: Repository<Group_user_product>,
     @InjectRepository(ProductDiscount)
     private readonly ProductDiscountRepository: Repository<ProductDiscount>,
     private readonly firebaseRepository: FirebaseRepository
@@ -47,8 +47,6 @@ export class GruopsService {
     const groupsByProductId = await this.groupRepository
       .createQueryBuilder('group')
       .addSelect('group.groupTime')
-      // .leftJoin('group.carts', 'carts')
-      // .addSelect('carts.total_quantity')
       .leftJoin('group.users', 'users', 'users.id = :userId', { userId: user.id })
       .addSelect('users.id')
       .where('group.product_id = :product_id', { product_id: product_id })
@@ -84,8 +82,8 @@ export class GruopsService {
       remainingHours = 0;
     }
 
-    const ItemGroups = await this.group_user_productRepository
-      .createQueryBuilder('group_user_product')
+    const ItemGroups = await this.usergroupRepository
+      .createQueryBuilder('user_group')
       .leftJoin('group_user_product.users', 'users')
       .addSelect(['users.id', 'users.username', 'users.email', 'users.image', 'users.address'])
       .where('group_user_product.group_id = :groupId', { groupId: group.id })
