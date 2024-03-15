@@ -9,16 +9,18 @@ export class User_group {
 
   @PrimaryGeneratedColumn()
   id: number;
-  @PrimaryColumn()
-  group_id: number;
 
-  @PrimaryColumn()
-  user_id: number;
+  // @Column()
+  // group_id: number;
+
+  // @Column()
+  // user_id: number;
 
   @Column({ type: 'enum', enum: PositionGroupEnum, default: null })
   @IsNotEmpty()
   role: string;
-  @Column()
+  
+  @Column({default:0})
   quantity: number;
 
   @Column({ default: 0 })
@@ -35,7 +37,7 @@ export class User_group {
     { onDelete: 'NO ACTION', onUpdate: 'NO ACTION' }
   )
   @JoinColumn([{ name: 'user_id', referencedColumnName: 'id' }])
-  users: User[];
+  users: User;
 
   @ManyToOne(
     () => Group,
@@ -44,5 +46,5 @@ export class User_group {
     { onDelete: 'NO ACTION', onUpdate: 'NO ACTION' }
   )
   @JoinColumn([{ name: 'group_id', referencedColumnName: 'id' }])
-  groups: Group[];
+  groups: Group;
 }

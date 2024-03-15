@@ -12,19 +12,19 @@ export class GruopsController {
 
 
 
-    @UseGuards(AuthGuard)
-    @Get()
-    async getAllGroups(@Query('product_id') product_id: number,@CurrentUser() user: User): Promise<any>{
-        return this.groupsService.getAllGroups(product_id,user);
+    // @UseGuards(AuthGuard)
+    // @Get()
+    // async getAllGroups(@Query('product_id') product_id: number,@CurrentUser() user: User): Promise<any>{
+    //     return this.groupsService.getAllGroups(product_id,user);
 
-    }
+    // }
 
 
-    @Get('cart_group')
-    @UseGuards(AuthGuard)
-    async getCartUsers(@Query('group_id') group_id: number,@CurrentUser() user: User): Promise<any>{
-        return this.groupsService.getCartGroups(group_id,user);
-    }
+    // @Get('cart_group')
+    // @UseGuards(AuthGuard)
+    // async getCartUsers(@Query('group_id') group_id: number,@CurrentUser() user: User): Promise<any>{
+    //     return this.groupsService.getCartGroups(group_id,user);
+    // }
 
 
 
