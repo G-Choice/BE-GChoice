@@ -5,6 +5,7 @@ import { AuthGuard } from '../guards/auth.guard';
 import { CurrentUser } from '../guards/user.decorator';
 import { User } from 'src/entities/User.entity';
 import { JoinGroupDto } from './dto/join_group.dto';
+import { SaveDataPayemntDto } from './dto/save_dataPayment.dto';
 
 @Controller('groups')
 export class GruopsController {
@@ -40,7 +41,12 @@ export class GruopsController {
         return this.groupsService.joinGroup(joinGroupDto,user);
     }
     
-
+    @UseGuards(AuthGuard)
+    @Post('/saveDataPayment')   
+    async saveDataPayment(@Body() saveDataPayemntDto: SaveDataPayemntDto, @CurrentUser() user: User): Promise<any>{
+        return this.groupsService.saveDataPayment(saveDataPayemntDto,user);
+    }
+    
 
 } 
 
