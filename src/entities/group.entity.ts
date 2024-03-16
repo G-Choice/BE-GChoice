@@ -59,23 +59,6 @@ export class Group {
   @JoinColumn({ name: 'product_id' })
   products: Product;
 
-  //   @ManyToMany(
-  //     () => User,
-  //     user => user.groups, //optional
-  // )
-  //   @JoinTable({
-  //     name: 'user_group',
-  //     joinColumn: {
-  //       name: 'group_id',
-  //       referencedColumnName: 'id',
-  //     },
-  //     inverseJoinColumn: {
-  //       name: 'user_id',
-  //       referencedColumnName: 'id',
-  //     },
-  //   })
-  //   users?: User[];
-
   @ManyToMany(() => User, user => user.groups)
   users: User[];
 

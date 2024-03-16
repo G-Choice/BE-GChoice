@@ -10,13 +10,7 @@ export class User_group {
   @PrimaryGeneratedColumn()
   id: number;
 
-  // @Column()
-  // group_id: number;
-
-  // @Column()
-  // user_id: number;
-
-  @Column({ type: 'enum', enum: PositionGroupEnum, default: null })
+  @Column({ type: 'enum', enum: PositionGroupEnum })
   @IsNotEmpty()
   role: string;
   

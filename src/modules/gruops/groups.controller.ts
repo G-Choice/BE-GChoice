@@ -1,4 +1,4 @@
-import { Body,Post, Controller,UseGuards,Get, Query } from '@nestjs/common';
+import { Body,Post, Controller,UseGuards,Get, Query, Param } from '@nestjs/common';
 import { GruopsService } from './groups.service';
 import { createGroupDto } from './dto/createGroup.dto';
 import { AuthGuard } from '../guards/auth.guard';
@@ -12,19 +12,19 @@ export class GruopsController {
 
 
 
-    // @UseGuards(AuthGuard)
-    // @Get()
-    // async getAllGroups(@Query('product_id') product_id: number,@CurrentUser() user: User): Promise<any>{
-    //     return this.groupsService.getAllGroups(product_id,user);
+    @UseGuards(AuthGuard)
+    @Get()
+    async getAllGroups(@Body('product_id') product_id: number,@CurrentUser() user: User): Promise<any>{
+        return this.groupsService.getAllGroups(product_id,user);
 
-    // }
+    }
 
 
-    // @Get('cart_group')
-    // @UseGuards(AuthGuard)
-    // async getCartUsers(@Query('group_id') group_id: number,@CurrentUser() user: User): Promise<any>{
-    //     return this.groupsService.getCartGroups(group_id,user);
-    // }
+    @Get('/itemGroup')
+    @UseGuards(AuthGuard)
+    async getItemGroups(@Query('group_id') group_id: number,@CurrentUser() user: User): Promise<any>{
+        return this.groupsService.getItemGroups(group_id,user);
+    }
 
 
 
