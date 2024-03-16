@@ -11,14 +11,13 @@ import { PositionEnum, PositionGroupEnum, PositionStatusGroupEnum } from 'src/co
 import { CurrentUser } from '../guards/user.decorator';
 import { ResponseItem } from 'src/common/dtos/responseItem';
 import { JoinGroupDto } from './dto/join_group.dto';
-// import { Carts } from 'src/entities/cart.entity';
-// import { Cart_user } from 'src/entities/cart_user.entyti';
 import { ProductDiscount } from 'src/entities/product_discount.entity';
 import { FirebaseRepository } from 'src/firebase/firebase.service';
 import * as admin from 'firebase-admin';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { log } from 'console';
-// import { Group_user_product } from 'src/entities/group_user_product.entity';
+import { SaveDataPayemntDto } from './dto/save_dataPayment.dto';
+
 
 @Injectable()
 export class GruopsService {
@@ -43,7 +42,7 @@ export class GruopsService {
     const groupsByProductId = await this.groupRepository
       .createQueryBuilder('group')
       .where('group.product_id = :product_id', { product_id: product_id })
-      .andWhere('group.status = :status', { status: PositionStatusGroupEnum.WAITING_FOR_USER })
+      .andWhere('group.status IN (:...statuses)', { statuses: [PositionStatusGroupEnum.WAITING_FOR_USER, PositionStatusGroupEnum.WAITING_FOR_PAYMENT] })
       .getMany();
 
     const userGroups = await this.usergroupRepository
@@ -335,6 +334,29 @@ export class GruopsService {
     }
   }
 
+  async saveDataPayment(@Body() saveDataPaymentDto: SaveDataPayemntDto, user: User): Promise<any> {
+    const group = await this.groupRepository.findOne({ where: { id: saveDataPaymentDto.group_id } })
+    if (!group) {
+      throw new Error("Group not found");
+    }
+    group.deliveryAddress = saveDataPaymentDto.deliveryAddress;
+    group.phoneNumber = saveDataPaymentDto.phoneNumber;
+    await this.groupRepository.save(group);
+    console.log(group);
+    const userGroup = await this.usergroupRepository.findOne({ where: { users: { id: user.id }, groups: { id: saveDataPaymentDto.group_id } } });
+    if (userGroup) {
+      userGroup.isPayment = true;
+      await this.usergroupRepository.save(userGroup);
+    } else {
+      throw new Error("User group not found");
+    }
+    return {
+      message: "Data payment saved successfully",
+      status: 200,
+      data: null
+    };
+  }
+
   @Cron(CronExpression.EVERY_MINUTE)
   async checkAndProcessExpiredGroups() {
     const now = new Date().getTime();
@@ -362,11 +384,11 @@ export class GruopsService {
           await this.usergroupRepository.remove(user_group)
           await this.groupRepository.delete(group.id);
           for (const user of users) {
-            const send =await this.firebaseRepository.sendPushNotification(user.fcmToken, {
+            const send = await this.firebaseRepository.sendPushNotification(user.fcmToken, {
               title: 'G-Choice notification', body: `The group ${product.product_name} has expired and has been deleted due to insufficient participants.`
             })
             console.log(send);
-            
+
           }
         }
       }
