@@ -312,7 +312,7 @@ export class GruopsService {
           for (const user of users) {
             const send = await this.firebaseRepository.sendPushNotification(user.fcmToken, {
               title: 'G-Choice Notification',
-              body: `The group ${product.product_name} has expired and has been deleted due to insufficient participants.`
+              body: `The group ${product.product_name} has enough participants. Please confirm your order.`
             });
             console.log(send);
 
