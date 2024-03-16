@@ -13,16 +13,16 @@ export class GruopsController {
 
 
     @UseGuards(AuthGuard)
-    @Get()
-    async getAllGroups(@Body('product_id') product_id: number,@CurrentUser() user: User): Promise<any>{
+    @Get(':product_id')
+    async getAllGroups(@Param('product_id') product_id: number,@CurrentUser() user: User): Promise<any>{
         return this.groupsService.getAllGroups(product_id,user);
 
     }
 
 
-    @Get('/itemGroup')
+    @Get('/itemGroup/:group_id')
     @UseGuards(AuthGuard)
-    async getItemGroups(@Query('group_id') group_id: number,@CurrentUser() user: User): Promise<any>{
+    async getItemGroups(@Param('group_id') group_id: number,@CurrentUser() user: User): Promise<any>{
         return this.groupsService.getItemGroups(group_id,user);
     }
 

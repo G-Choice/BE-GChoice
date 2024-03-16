@@ -1,4 +1,4 @@
-import { Body, Injectable, NotFoundException } from '@nestjs/common';
+import { Body, Injectable, NotFoundException, Param } from '@nestjs/common';
 import { Group } from 'src/entities/group.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
@@ -37,7 +37,7 @@ export class GruopsService {
 
   ) { }
 
-  async getAllGroups(@Body('product_id') product_id: number, @CurrentUser() user: User): Promise<any> {
+  async getAllGroups(@Param('product_id') product_id: number, @CurrentUser() user: User): Promise<any> {
     const currentTimestamp = new Date().getTime();
 
     const groupsByProductId = await this.groupRepository
@@ -83,7 +83,7 @@ export class GruopsService {
     return new ResponseItem(groupsWithRemainingTime, 'Successfully!');
 
   }
-  async getItemGroups(group_id: number, @CurrentUser() user: User): Promise<any> {
+  async getItemGroups(@Param('group_id') group_id: number, @CurrentUser() user: User): Promise<any> {
     const currentTimestamp = new Date().getTime();
     const group = await this.groupRepository.findOne({ where: { id: group_id } });
     const productByGroup = await this.productRepository.findOne({ where: { groups: { id: group_id } } });
