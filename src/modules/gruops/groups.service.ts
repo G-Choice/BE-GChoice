@@ -124,6 +124,26 @@ export class GruopsService {
     };
   }
 
+  async getStatusGroups(group_id: number): Promise<any> {
+    try {
+        const group = await this.groupRepository.findOne({where:{id:group_id}});
+        if (!group) {
+            return {
+                statusCode: HttpStatus.NOT_FOUND,
+                message: "Group not found.",
+            };
+        }
+        return {
+            statusCode: HttpStatus.OK,
+            message: "Group status retrieved successfully.",
+            data: group
+        };
+    } catch (error) {
+        throw new Error("Error retrieving group status.");
+    }
+}
+
+
   async getAllGroupsbyUser(user: User): Promise<any> {
     try {
       const user_group = await this.usergroupRepository
