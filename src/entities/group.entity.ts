@@ -1,5 +1,5 @@
 import { IsNotEmpty } from "class-validator";
-import { Column, CreateDateColumn, Entity, JoinColumn, JoinTable, ManyToMany, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, JoinColumn, JoinTable, ManyToMany, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { Product } from "./product.entity";
 import { User } from "./User.entity";
 import { User_group } from "./user_group.entity";
@@ -55,6 +55,9 @@ export class Group {
   @IsNotEmpty()
   status: string;
 
+  @UpdateDateColumn({ nullable: true })
+  update_At: Date; 
+  
   @ManyToOne(() => Product, product => product.groups)
   @JoinColumn({ name: 'product_id' })
   products: Product;

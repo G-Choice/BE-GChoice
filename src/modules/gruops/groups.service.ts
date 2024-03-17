@@ -1,4 +1,4 @@
-import { Body, Injectable, NotFoundException, Param } from '@nestjs/common';
+import { Body, HttpCode, HttpStatus, Injectable, NotFoundException, Param } from '@nestjs/common';
 import { Group } from 'src/entities/group.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
@@ -123,6 +123,35 @@ export class GruopsService {
       message: 'Successfully!'
     };
   }
+
+  async getAllGroupsbyUser(user: User): Promise<any> {
+    try {
+      const user_group = await this.usergroupRepository
+        .createQueryBuilder("user_group")
+        .select([
+          'user_group.id AS id',
+          'user_group.role AS role',
+          'user_group.quantity AS quantity',
+          'user_group.price AS price',
+          'user_group.isPayment AS isPayment',
+          'user_group.user_id AS user_id',
+          'user_group.group_id AS group_id'
+        ])
+        .innerJoin("user_group.groups", "group")
+        .where("user_group.users.id = :userId", { userId: user.id })
+        .getRawMany();
+      const group_ids = user_group.map(userGroup => userGroup.group_id);
+      const groups = await this.groupRepository.find({ where: { id: In(group_ids) } });
+      return {
+        statusCode: HttpStatus.OK,
+        message: "Groups retrieved successfully.",
+        data: groups
+      };
+    } catch (error) {
+      throw new Error("Error retrieving user's groups.");
+    }
+  }
+
 
   async createGroups(data: createGroupDto, @CurrentUser() user: User): Promise<any> {
     try {

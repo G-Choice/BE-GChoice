@@ -20,13 +20,23 @@ export class GruopsController {
 
     }
 
-
     @Get('/itemGroup/:group_id')
     @UseGuards(AuthGuard)
     async getItemGroups(@Param('group_id') group_id: number,@CurrentUser() user: User): Promise<any>{
         return this.groupsService.getItemGroups(group_id,user);
     }
 
+
+    @UseGuards(AuthGuard)
+    @Get() 
+    async getAllGroupsbyUser(@CurrentUser() user: User): Promise<any> {
+        try {
+            const userGroups = await this.groupsService.getAllGroupsbyUser(user);
+            return userGroups;
+        } catch (error) {
+            throw new Error("Error retrieving user's groups.");
+        }
+    }
 
 
     @UseGuards(AuthGuard)
