@@ -14,10 +14,14 @@ export class GruopsController {
 
 
     @UseGuards(AuthGuard)
-    @Get(':product_id')
+    @Get('/:product_id')
     async getAllGroups(@Param('product_id') product_id: number,@CurrentUser() user: User): Promise<any>{
         return this.groupsService.getAllGroups(product_id,user);
 
+    }
+    @Get('/statusGroup/:group_id')
+    async getStatusGroups(@Param('group_id') group_id: number): Promise<any>{
+        return this.groupsService.getStatusGroups(group_id);
     }
 
     @Get('/itemGroup/:group_id')
