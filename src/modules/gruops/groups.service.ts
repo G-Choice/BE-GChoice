@@ -145,7 +145,7 @@ export class GruopsService {
       return {
         statusCode: HttpStatus.OK,
         message: "Groups retrieved successfully.",
-        data: groups
+        data:groups
       };
     } catch (error) {
       throw new Error("Error retrieving user's groups.");

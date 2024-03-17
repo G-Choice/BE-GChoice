@@ -10,6 +10,9 @@ import { Group } from './group.entity';
 
 @Entity('products')
 export class Product {
+  map(arg0: (product: any) => any): any {
+    throw new Error('Method not implemented.');
+  }
   @PrimaryGeneratedColumn()
   id: number;
 
