@@ -63,7 +63,7 @@ export class GruopsService {
     const groupsWithRemainingTime = groupsByProductId.map(group => {
       const isJoined = userGroups.some(userGroup => {
         return userGroup.group_id === group.id;
-      });
+      }); 
 
       const remainingTimeInMilliseconds = group.expiration_time.getTime() - currentTimestamp;
       let remainingHours = remainingTimeInMilliseconds / (1000 * 60 * 60);
@@ -126,51 +126,90 @@ export class GruopsService {
 
   async getStatusGroups(group_id: number): Promise<any> {
     try {
-        const group = await this.groupRepository.findOne({where:{id:group_id}});
-        if (!group) {
-            return {
-                statusCode: HttpStatus.NOT_FOUND,
-                message: "Group not found.",
-            };
-        }
+      const group = await this.groupRepository
+        .createQueryBuilder("group")
+        .leftJoinAndSelect("group.products", "product")
+        .where("group.id = :groupId", { groupId: group_id })
+        .getOne();
+      if (!group) {
         return {
-            statusCode: HttpStatus.OK,
-            message: "Group status retrieved successfully.",
-            data: group
+          statusCode: HttpStatus.NOT_FOUND,
+          message: "Group not found.",
         };
+      }
+      return {
+        statusCode: HttpStatus.OK,
+        message: "Group status retrieved successfully.",
+        data: group
+      };
     } catch (error) {
-        throw new Error("Error retrieving group status.");
+      throw new Error("Error retrieving group status.");
     }
-}
+  }
 
 
   async getAllGroupsbyUser(user: User): Promise<any> {
     try {
-      const user_group = await this.usergroupRepository
-        .createQueryBuilder("user_group")
-        .select([
-          'user_group.id AS id',
-          'user_group.role AS role',
-          'user_group.quantity AS quantity',
-          'user_group.price AS price',
-          'user_group.isPayment AS isPayment',
-          'user_group.user_id AS user_id',
-          'user_group.group_id AS group_id'
-        ])
-        .innerJoin("user_group.groups", "group")
-        .where("user_group.users.id = :userId", { userId: user.id })
-        .getRawMany();
-      const group_ids = user_group.map(userGroup => userGroup.group_id);
-      const groups = await this.groupRepository.find({ where: { id: In(group_ids) } });
-      return {
-        statusCode: HttpStatus.OK,
-        message: "Groups retrieved successfully.",
-        data:groups
-      };
+        const currentTimestamp = new Date().getTime();
+        const user_group = await this.usergroupRepository
+            .createQueryBuilder("user_group")
+            .select([
+                'user_group.id AS id',
+                'user_group.role AS role',
+                'user_group.quantity AS quantity',
+                'user_group.price AS price',
+                'user_group.isPayment AS isPayment',
+                'user_group.user_id AS user_id',
+                'user_group.group_id AS group_id'
+            ])
+            .innerJoin("user_group.groups", "group")
+            .where("user_group.users.id = :userId", { userId: user.id })
+            .getRawMany();
+        const group_ids = user_group.map(userGroup => userGroup.group_id);
+        const groups = await this.groupRepository
+            .createQueryBuilder("group")
+            .select([
+                'group.id AS id',
+                'group.group_name AS group_name',
+                'group.description AS description',
+                'group.image AS image',
+                'group.expected_quantity AS expected_quantity',
+                'group.current_quantity AS current_quantity',
+                'group.isConfirm AS isConfirm',
+                'group.expiration_time AS expiration_time',
+                'group.create_At AS create_At',
+                'group.deliveryAddress AS deliveryAddress',
+                'group.phoneNumber AS phoneNumber',
+                'group.status AS status',
+                'group.update_At AS update_At',
+                'group.product_id AS product_id',
+            ])
+            .where("group.id IN (:...groupIds)", { groupIds: group_ids })
+            .getRawMany();
+
+        // Finding products associated with groups
+        const productIds = groups.map(group => group.product_id);
+        const products = await this.productRepository
+            .createQueryBuilder("product")
+            .where("product.id IN (:...productIds)", { productIds: productIds })
+            .getMany();
+
+        // Associate products with groups
+        groups.forEach(group => {
+            group.products = products.filter(product => product.id === group.product_id);
+            let remainingHours = (group.expiration_time.getTime() - currentTimestamp) / (1000 * 60 * 60);
+            group.remainingHours = remainingHours < 0 ? 0 : remainingHours; // Add remainingHours to group
+        });
+
+        return {
+            statusCode: HttpStatus.OK,
+            message: "Groups retrieved successfully.",
+            data: groups
+        };
     } catch (error) {
-      throw new Error("Error retrieving user's groups.");
+        throw new Error("Error retrieving user's groups.");
     }
-  }
+}
 
 
   async createGroups(data: createGroupDto, @CurrentUser() user: User): Promise<any> {
