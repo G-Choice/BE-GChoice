@@ -17,7 +17,10 @@ import * as admin from 'firebase-admin';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { log } from 'console';
 import { SaveDataPayemntDto } from './dto/save_dataPayment.dto';
-
+import { Shop } from 'src/entities/shop.entity';
+import { GetGroupParams } from './dto/get_group.dto';
+import { PageMetaDto } from 'src/common/dtos/pageMeta';
+import { ResponsePaginate } from 'src/common/dtos/responsePaginate';
 
 @Injectable()
 export class GruopsService {
@@ -30,6 +33,8 @@ export class GruopsService {
     private readonly usergroupRepository: Repository<User_group>,
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
+    @InjectRepository(Shop)
+    private readonly shopRepository: Repository<Shop>,
     @InjectRepository(ProductDiscount)
     private readonly ProductDiscountRepository: Repository<ProductDiscount>,
     private readonly firebaseRepository: FirebaseRepository
@@ -63,7 +68,7 @@ export class GruopsService {
     const groupsWithRemainingTime = groupsByProductId.map(group => {
       const isJoined = userGroups.some(userGroup => {
         return userGroup.group_id === group.id;
-      }); 
+      });
 
       const remainingTimeInMilliseconds = group.expiration_time.getTime() - currentTimestamp;
       let remainingHours = remainingTimeInMilliseconds / (1000 * 60 * 60);
@@ -124,6 +129,47 @@ export class GruopsService {
     };
   }
 
+  async getGroupsByShop(params: GetGroupParams, user: User): Promise<any> {
+    try {
+      const page = params.page || 1;
+      const take = params.take || 6;
+      const skip = (page - 1) * take;
+      const userShop = await this.userRepository.findOne({ where: { id: user.id } });
+      if (!userShop) {
+        throw new Error("User not found");
+      }
+
+      const shop = await this.shopRepository.findOne({ where: { user: { id: userShop.id } } });
+      if (!shop) {
+        throw new Error("Shop not found");
+      }
+      // Thiết lập trạng thái mặc định nếu params.status_group không được chỉ định
+      const statusGroup = params.status_group || PositionStatusGroupEnum.WAITING_CONFIRMATION_ORDER;
+      let query = this.groupRepository
+        .createQueryBuilder('group')
+        .leftJoinAndSelect('group.user_groups', 'user_groups')
+        .leftJoinAndSelect('group.products', 'product')
+        .offset(skip)
+        .limit(take);
+      // Áp dụng điều kiện where nếu trạng thái nhóm đã được chỉ định
+      if (statusGroup) {
+        query = query.where('group.status = :status', { status: statusGroup });
+      }
+      const [groups, total] = await query.getManyAndCount();
+      const pageMetaDto = new PageMetaDto({
+        pageOptionsDto: params,
+        itemCount: total,
+      });
+      return new ResponsePaginate(groups, pageMetaDto, 'Success');
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+        data: null
+      };
+    }
+  }
+
   async getStatusGroups(group_id: number): Promise<any> {
     try {
       const group = await this.groupRepository
@@ -150,66 +196,66 @@ export class GruopsService {
 
   async getAllGroupsbyUser(user: User): Promise<any> {
     try {
-        const currentTimestamp = new Date().getTime();
-        const user_group = await this.usergroupRepository
-            .createQueryBuilder("user_group")
-            .select([
-                'user_group.id AS id',
-                'user_group.role AS role',
-                'user_group.quantity AS quantity',
-                'user_group.price AS price',
-                'user_group.isPayment AS isPayment',
-                'user_group.user_id AS user_id',
-                'user_group.group_id AS group_id'
-            ])
-            .innerJoin("user_group.groups", "group")
-            .where("user_group.users.id = :userId", { userId: user.id })
-            .getRawMany();
-        const group_ids = user_group.map(userGroup => userGroup.group_id);
-        const groups = await this.groupRepository
-            .createQueryBuilder("group")
-            .select([
-                'group.id AS id',
-                'group.group_name AS group_name',
-                'group.description AS description',
-                'group.image AS image',
-                'group.expected_quantity AS expected_quantity',
-                'group.current_quantity AS current_quantity',
-                'group.isConfirm AS isConfirm',
-                'group.expiration_time AS expiration_time',
-                'group.create_At AS create_At',
-                'group.deliveryAddress AS deliveryAddress',
-                'group.phoneNumber AS phoneNumber',
-                'group.status AS status',
-                'group.update_At AS update_At',
-                'group.product_id AS product_id',
-            ])
-            .where("group.id IN (:...groupIds)", { groupIds: group_ids })
-            .getRawMany();
+      const currentTimestamp = new Date().getTime();
+      const user_group = await this.usergroupRepository
+        .createQueryBuilder("user_group")
+        .select([
+          'user_group.id AS id',
+          'user_group.role AS role',
+          'user_group.quantity AS quantity',
+          'user_group.price AS price',
+          'user_group.isPayment AS isPayment',
+          'user_group.user_id AS user_id',
+          'user_group.group_id AS group_id'
+        ])
+        .innerJoin("user_group.groups", "group")
+        .where("user_group.users.id = :userId", { userId: user.id })
+        .getRawMany();
+      const group_ids = user_group.map(userGroup => userGroup.group_id);
+      const groups = await this.groupRepository
+        .createQueryBuilder("group")
+        .select([
+          'group.id AS id',
+          'group.group_name AS group_name',
+          'group.description AS description',
+          'group.image AS image',
+          'group.expected_quantity AS expected_quantity',
+          'group.current_quantity AS current_quantity',
+          'group.isConfirm AS isConfirm',
+          'group.expiration_time AS expiration_time',
+          'group.create_At AS create_At',
+          'group.deliveryAddress AS deliveryAddress',
+          'group.phoneNumber AS phoneNumber',
+          'group.status AS status',
+          'group.update_At AS update_At',
+          'group.product_id AS product_id',
+        ])
+        .where("group.id IN (:...groupIds)", { groupIds: group_ids })
+        .getRawMany();
 
-        // Finding products associated with groups
-        const productIds = groups.map(group => group.product_id);
-        const products = await this.productRepository
-            .createQueryBuilder("product")
-            .where("product.id IN (:...productIds)", { productIds: productIds })
-            .getMany();
+      // Finding products associated with groups
+      const productIds = groups.map(group => group.product_id);
+      const products = await this.productRepository
+        .createQueryBuilder("product")
+        .where("product.id IN (:...productIds)", { productIds: productIds })
+        .getMany();
 
-        // Associate products with groups
-        groups.forEach(group => {
-            group.products = products.filter(product => product.id === group.product_id);
-            let remainingHours = (group.expiration_time.getTime() - currentTimestamp) / (1000 * 60 * 60);
-            group.remainingHours = remainingHours < 0 ? 0 : remainingHours; // Add remainingHours to group
-        });
+      // Associate products with groups
+      groups.forEach(group => {
+        group.products = products.filter(product => product.id === group.product_id);
+        let remainingHours = (group.expiration_time.getTime() - currentTimestamp) / (1000 * 60 * 60);
+        group.remainingHours = remainingHours < 0 ? 0 : remainingHours; // Add remainingHours to group
+      });
 
-        return {
-            statusCode: HttpStatus.OK,
-            message: "Groups retrieved successfully.",
-            data: groups
-        };
+      return {
+        statusCode: HttpStatus.OK,
+        message: "Groups retrieved successfully.",
+        data: groups
+      };
     } catch (error) {
-        throw new Error("Error retrieving user's groups.");
+      throw new Error("Error retrieving user's groups.");
     }
-}
+  }
 
 
   async createGroups(data: createGroupDto, @CurrentUser() user: User): Promise<any> {
@@ -225,6 +271,10 @@ export class GruopsService {
       }
       if (product.status === 'maintaining') {
         throw new Error('This product is currently under maintenance. Please try again later.');
+      }
+      const shop = await this.shopRepository.findOne({ where: { products: { id: product.id } } });
+      if (!shop) {
+        throw new Error('Shop not found');
       }
       const exitingGroup = await this.usergroupRepository
         .createQueryBuilder('user_group')
@@ -243,6 +293,7 @@ export class GruopsService {
           expiration_time: addHours(new Date(), data.hours),
           status: PositionStatusGroupEnum.WAITING_FOR_USER,
           products: product,
+          shop: shop,
         });
         const savedGroup = await this.groupRepository.save(newGroup);
         const product_discounts = await this.ProductDiscountRepository.find({
@@ -422,6 +473,43 @@ export class GruopsService {
     }
   }
 
+
+  async confirmOrder(id: number, user: User): Promise<any> {
+    try {
+      const existingUser = await this.userRepository.findOne({ where: { id: user.id } });
+      
+      if (!existingUser) {
+        throw new NotFoundException('User does not exist.');
+      }
+
+      const existingShop = await this.shopRepository.findOne({ where: { id: existingUser.id } });
+
+      if (!existingShop) {
+        throw new NotFoundException('Shop does not exist.');
+      }
+
+      const group = await this.groupRepository
+        .createQueryBuilder("group")
+        .where("group.id = :id", { id: id })
+        .getRawOne();
+      if (!group) {
+        throw new NotFoundException('Group not found');
+      }
+
+      if (group.group_shop_id !== existingShop.id) {
+        throw new Error('You do not have permission to confirm this order.');
+      }
+
+      await this.groupRepository.update({ id: id }, { isConfirm: true, status: PositionStatusGroupEnum.WAITING_DELIVERY });
+
+      return {
+        message: 'Group confirmed successfully',
+        data: null,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
   async saveDataPayment(@Body() saveDataPaymentDto: SaveDataPayemntDto, user: User): Promise<any> {
     const group = await this.groupRepository.findOne({ where: { id: saveDataPaymentDto.group_id } })
     if (!group) {
@@ -482,4 +570,8 @@ export class GruopsService {
       }
     }
   }
+
+
+
+
 }

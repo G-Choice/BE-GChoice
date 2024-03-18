@@ -4,6 +4,7 @@ import { Product } from "./product.entity";
 import { User } from "./User.entity";
 import { User_group } from "./user_group.entity";
 import { PositionStatusGroupEnum } from "src/common/enum/enums";
+import { Shop } from "./shop.entity";
 
 @Entity('groups')
 export class Group {
@@ -55,6 +56,9 @@ export class Group {
   @IsNotEmpty()
   status: string;
 
+  @ManyToOne(() => Shop, shop => shop.groups) // Establishing a Many-to-One relationship with Shop
+  @JoinColumn({ name: 'shop_id' })
+  shop: Shop; // Assuming each group belongs to a single shop
   @UpdateDateColumn({ nullable: true })
   update_At: Date; 
   

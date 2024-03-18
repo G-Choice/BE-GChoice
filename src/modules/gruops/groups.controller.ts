@@ -1,4 +1,4 @@
-import { Body,Post, Controller,UseGuards,Get, Query, Param } from '@nestjs/common';
+import { Body, Post, Controller, UseGuards, Get, Query, Param, Put } from '@nestjs/common';
 import { GruopsService } from './groups.service';
 import { createGroupDto } from './dto/createGroup.dto';
 import { AuthGuard } from '../guards/auth.guard';
@@ -6,33 +6,38 @@ import { CurrentUser } from '../guards/user.decorator';
 import { User } from 'src/entities/User.entity';
 import { JoinGroupDto } from './dto/join_group.dto';
 import { SaveDataPayemntDto } from './dto/save_dataPayment.dto';
+import { GetGroupParams } from './dto/get_group.dto';
 
 @Controller('groups')
 export class GruopsController {
-    constructor(private groupsService:  GruopsService ) { }
+    constructor(private groupsService: GruopsService) { }
 
 
-
+    @Get('/getGroupByShop')
+    @UseGuards(AuthGuard)
+    async getGroupsByShop(@Query()getGroupParams:GetGroupParams,@CurrentUser() user: User): Promise<any> {
+        return this.groupsService.getGroupsByShop(getGroupParams,user);
+    }
     @UseGuards(AuthGuard)
     @Get('/:product_id')
-    async getAllGroups(@Param('product_id') product_id: number,@CurrentUser() user: User): Promise<any>{
-        return this.groupsService.getAllGroups(product_id,user);
+    async getAllGroups(@Param('product_id') product_id: number, @CurrentUser() user: User): Promise<any> {
+        return this.groupsService.getAllGroups(product_id, user);
 
     }
     @Get('/statusGroup/:group_id')
-    async getStatusGroups(@Param('group_id') group_id: number): Promise<any>{
+    async getStatusGroups(@Param('group_id') group_id: number): Promise<any> {
         return this.groupsService.getStatusGroups(group_id);
     }
 
     @Get('/itemGroup/:group_id')
     @UseGuards(AuthGuard)
-    async getItemGroups(@Param('group_id') group_id: number,@CurrentUser() user: User): Promise<any>{
-        return this.groupsService.getItemGroups(group_id,user);
+    async getItemGroups(@Param('group_id') group_id: number, @CurrentUser() user: User): Promise<any> {
+        return this.groupsService.getItemGroups(group_id, user);
     }
 
 
     @UseGuards(AuthGuard)
-    @Get() 
+    @Get()
     async getAllGroupsbyUser(@CurrentUser() user: User): Promise<any> {
         try {
             const userGroups = await this.groupsService.getAllGroupsbyUser(user);
@@ -45,22 +50,27 @@ export class GruopsController {
 
     @UseGuards(AuthGuard)
     @Post()
-    async createGroups(@Body() data :createGroupDto , @CurrentUser() user: User): Promise<any>{
+    async createGroups(@Body() data: createGroupDto, @CurrentUser() user: User): Promise<any> {
         return this.groupsService.createGroups(data, user);
     }
 
     @UseGuards(AuthGuard)
-    @Post('/joinGroup')   
-    async joinGroup(@Body() joinGroupDto: JoinGroupDto, @CurrentUser() user: User): Promise<any>{
-        return this.groupsService.joinGroup(joinGroupDto,user);
+    @Post('/joinGroup')
+    async joinGroup(@Body() joinGroupDto: JoinGroupDto, @CurrentUser() user: User): Promise<any> {
+        return this.groupsService.joinGroup(joinGroupDto, user);
     }
-    
-    @UseGuards(AuthGuard)
-    @Post('/saveDataPayment')   
-    async saveDataPayment(@Body() saveDataPayemntDto: SaveDataPayemntDto, @CurrentUser() user: User): Promise<any>{
-        return this.groupsService.saveDataPayment(saveDataPayemntDto,user);
-    }
-    
 
-} 
+    @UseGuards(AuthGuard)
+    @Post('/saveDataPayment')
+    async saveDataPayment(@Body() saveDataPayemntDto: SaveDataPayemntDto, @CurrentUser() user: User): Promise<any> {
+        return this.groupsService.saveDataPayment(saveDataPayemntDto, user);
+    }
+
+    @UseGuards(AuthGuard)
+    @Put('/confirmOrder/:id')
+    async confirmOrder(@Param('id') id: number, @CurrentUser() user: User): Promise<any> {
+        return this.groupsService.confirmOrder(id, user);
+    }
+
+}
 
