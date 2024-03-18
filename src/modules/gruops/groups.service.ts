@@ -144,7 +144,7 @@ export class GruopsService {
         throw new Error("Shop not found");
       }
       // Thiết lập trạng thái mặc định nếu params.status_group không được chỉ định
-      const statusGroup = params.status_group || PositionStatusGroupEnum.WAITING_FOR_USER;
+      const statusGroup = params.status_group || PositionStatusGroupEnum.WAITING_CONFIRMATION_ORDER;
       let query = this.groupRepository
         .createQueryBuilder('group')
         .leftJoinAndSelect('group.user_groups', 'user_groups')

@@ -25,7 +25,7 @@ export enum Order {
 export enum PositionStatusGroupEnum {
   WAITING_FOR_USER = 'waiting_for_user',
   WAITING_FOR_PAYMENT = 'waiting_for_payment',
-  PAYMENT_SUCCESS = 'waiting_confirmation_order',
+  WAITING_CONFIRMATION_ORDER = 'waiting_confirmation_order',
   CONFIRMATION_ORDER = 'confirmation_order',
   WAITING_DELIVERY = 'waiting_delivery',
   DONE = 'received',
