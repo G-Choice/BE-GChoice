@@ -473,6 +473,43 @@ export class GruopsService {
     }
   }
 
+
+  async confirmOrder(id: number, user: User): Promise<any> {
+    try {
+      const existingUser = await this.userRepository.findOne({ where: { id: user.id } });
+      
+      if (!existingUser) {
+        throw new NotFoundException('User does not exist.');
+      }
+
+      const existingShop = await this.shopRepository.findOne({ where: { id: existingUser.id } });
+
+      if (!existingShop) {
+        throw new NotFoundException('Shop does not exist.');
+      }
+
+      const group = await this.groupRepository
+        .createQueryBuilder("group")
+        .where("group.id = :id", { id: id })
+        .getRawOne();
+      if (!group) {
+        throw new NotFoundException('Group not found');
+      }
+
+      if (group.group_shop_id !== existingShop.id) {
+        throw new Error('You do not have permission to confirm this order.');
+      }
+
+      await this.groupRepository.update({ id: id }, { isConfirm: true, status: PositionStatusGroupEnum.WAITING_DELIVERY });
+
+      return {
+        message: 'Group confirmed successfully',
+        data: null,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
   async saveDataPayment(@Body() saveDataPaymentDto: SaveDataPayemntDto, user: User): Promise<any> {
     const group = await this.groupRepository.findOne({ where: { id: saveDataPaymentDto.group_id } })
     if (!group) {
@@ -533,4 +570,8 @@ export class GruopsService {
       }
     }
   }
+
+
+
+
 }

@@ -1,4 +1,4 @@
-import { Body, Post, Controller, UseGuards, Get, Query, Param } from '@nestjs/common';
+import { Body, Post, Controller, UseGuards, Get, Query, Param, Put } from '@nestjs/common';
 import { GruopsService } from './groups.service';
 import { createGroupDto } from './dto/createGroup.dto';
 import { AuthGuard } from '../guards/auth.guard';
@@ -66,6 +66,11 @@ export class GruopsController {
         return this.groupsService.saveDataPayment(saveDataPayemntDto, user);
     }
 
+    @UseGuards(AuthGuard)
+    @Put('/confirmOrder/:id')
+    async confirmOrder(@Param('id') id: number, @CurrentUser() user: User): Promise<any> {
+        return this.groupsService.confirmOrder(id, user);
+    }
 
 }
 
