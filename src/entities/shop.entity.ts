@@ -3,6 +3,7 @@ import { IsNotEmpty, IsString, IsOptional, IsDate } from 'class-validator';
 import { User } from './User.entity';
 import { Product } from './product.entity';
 import { Category } from './category.entity';
+import { Group } from './group.entity';
 
 @Entity('shops')
 export class Shop {
@@ -49,7 +50,8 @@ export class Shop {
     @JoinColumn({ name: 'user_id' })
     user: User;
 
-    
+    @OneToMany(() => Group, group => group.shop) // Establishing a One-to-Many relationship with Group
+    groups: Group[]; // Assuming a shop can have multiple groups
     @OneToMany(() => Product, product => product.shop,{
         cascade: true,
     })
