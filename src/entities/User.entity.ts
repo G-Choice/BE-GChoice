@@ -5,6 +5,8 @@ import { Shop } from './shop.entity';
 import { ProductReview } from './ProductReviews.entity';
 import { Group } from './group.entity';
 import { User_group } from './user_group.entity';
+import { Receiving_station } from './receiving_station';
+
 @Entity('users')
 export class User {
   
@@ -64,6 +66,8 @@ export class User {
 
   @OneToOne(() => Shop, shop => shop.user) 
   shop: Shop;
+  @OneToOne(() => Receiving_station, receiving_station => receiving_station.user) 
+  receiving_station:Receiving_station;
 
   @OneToMany(() => ProductReview , (productReviews) => productReviews.users)
   productReviews:  ProductReview [];

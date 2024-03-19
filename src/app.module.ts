@@ -12,6 +12,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { CategoryModule } from './modules/category/category.module';
 import { ShopModule } from './modules/shop/shop.module';
 import { PaymentModule } from './modules/payment/payment.module';
+import { ReceivingStationModule } from './modules/receiving_station/receiving_station.module';
 
 
 
@@ -28,7 +29,8 @@ import { PaymentModule } from './modules/payment/payment.module';
     FirebaseModule,
     CategoryModule,
     ShopModule,
-    PaymentModule
+    PaymentModule,
+    ReceivingStationModule
 
   ],
   controllers: [],

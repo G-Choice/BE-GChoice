@@ -5,6 +5,7 @@ import { User } from "./User.entity";
 import { User_group } from "./user_group.entity";
 import { PositionStatusGroupEnum } from "src/common/enum/enums";
 import { Shop } from "./shop.entity";
+import { Receiving_station } from "./receiving_station";
 
 @Entity('groups')
 export class Group {
@@ -71,4 +72,7 @@ export class Group {
 
   @OneToMany(() => User_group, user_group => user_group.groups)
   user_groups: User_group[];
+
+  @ManyToOne(() => Receiving_station, receiving_station => receiving_station.group) 
+  receiving_station: Receiving_station; 
 }
