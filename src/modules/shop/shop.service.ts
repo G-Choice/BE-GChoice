@@ -41,7 +41,21 @@ export class ShopService {
             data: shop,
         };
     }
-
+    async shopdInfor (shop_id:number): Promise< { data: Shop | null, message: string, statusCode: number }>{
+      const shop = await this.shopRepository.findOne({ where: { id:shop_id}});
+      if (!shop) {
+          return {
+              statusCode: HttpStatus.NOT_FOUND,
+              message: 'Shop not found' ,
+              data: null,
+          };
+      }
+      return {
+          statusCode: HttpStatus.OK,
+          message: 'Shop found',
+          data: shop,
+      };
+  }
     async createShop(
         createShopDTO: CreateShopDTO,
         @CurrentUser() user: User,

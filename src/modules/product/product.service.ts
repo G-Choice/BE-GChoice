@@ -131,7 +131,39 @@ export class ProductService {
 
     return new ResponsePaginate(result, pageMetaDto, 'Success');
   }
-
+  async productOfShop(shop_id: number) {
+    try {
+      const Shop = await this.shopRepository.findOne({ where: { id: shop_id } });
+      if (!Shop) {
+        return {
+          statusCode: HttpStatus.NOT_FOUND,
+          message: 'Shop not found',
+          data: null,
+        };
+      }
+  
+      const products = await this.productRepository
+        .createQueryBuilder('product')
+        .where('product.shop_id = :shopId', { shopId: Shop.id })
+        .leftJoin('product.category', 'category')
+        .addSelect('category.category_name AS category_name')
+        .orderBy('product.created_at', 'DESC')
+        .getMany();
+  
+      return {
+        statusCode: HttpStatus.OK,
+        message: 'Product updated successfully',
+        data: products,
+      };
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: 'Internal server error',
+        error: error.message,
+      };
+    }
+  }
+  
 
   async getAllproduct(params: GetProductParams,) {
     const page = params.page || 1;

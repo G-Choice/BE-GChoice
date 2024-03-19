@@ -15,6 +15,8 @@ export class PaymentService {
           enabled: true,
         },
       });
+      console.log(paymentIntent);
+      
       return paymentIntent.client_secret;
     } catch (e) {
       throw new Error(e.message);

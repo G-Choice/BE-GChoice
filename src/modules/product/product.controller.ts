@@ -55,6 +55,10 @@ export class ProductController {
         return this.productService.getAllproductByShop(params, user);
     }
 
+    @Get('/productOfShop/:shop_id')
+    productOfShop(@Param('shop_id') shop_id : number) {
+        return this.productService.productOfShop(shop_id);
+    }
     @Get()
     getAllProduct(@Query() params: GetProductParams) {
         return this.productService.getAllproduct(params);

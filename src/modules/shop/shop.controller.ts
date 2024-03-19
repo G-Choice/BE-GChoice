@@ -1,4 +1,4 @@
-import { Body, Controller, Patch, Post, UploadedFiles, UseGuards, UseInterceptors, Get, Delete } from '@nestjs/common';
+import { Body, Controller, Patch, Post, UploadedFiles, UseGuards, UseInterceptors, Get, Delete, Param } from '@nestjs/common';
 import { ShopService } from './shop.service';
 import { AuthGuard } from '../guards/auth.guard';
 import { CreateShopDTO } from './dto/create_shop.dto';
@@ -25,6 +25,12 @@ export class ShopController {
         return await this.shopService.getShopDetail(user);
     }
 
+    @Get('/shopInfor/:shop_id')
+    async shopdInfor(
+       @Param('shop_id') shop_id:number
+    ): Promise<{ data: Shop | null, message: string, statusCode: number }> {
+        return await this.shopService.shopdInfor(shop_id);
+    }
     @Post()
     @UseInterceptors(FilesInterceptor('files', 5))
     @UseGuards(AuthGuard)

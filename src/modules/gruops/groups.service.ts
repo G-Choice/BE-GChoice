@@ -47,7 +47,7 @@ export class GruopsService {
     const groupsByProductId = await this.groupRepository
       .createQueryBuilder('group')
       .where('group.product_id = :product_id', { product_id: product_id })
-      .andWhere('group.status IN (:...statuses)', { statuses: [PositionStatusGroupEnum.WAITING_FOR_USER, PositionStatusGroupEnum.WAITING_FOR_PAYMENT] })
+      .andWhere('group.status IN (:...statuses)', { statuses: [PositionStatusGroupEnum.WAITING_FOR_USER] })
       .getMany();
 
     const userGroups = await this.usergroupRepository
