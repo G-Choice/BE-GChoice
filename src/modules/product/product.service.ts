@@ -259,8 +259,7 @@ export class ProductService {
     @UploadedFiles() files: Array<Express.Multer.File>,
     @CurrentUser() user: User,
   ): Promise<{ data: Product | null, message: string, statusCode: number }> {
-    try {
-      const Shop = await this.shopRepository.findOne({ where: { user: { id: user.id } } });
+    try {    
       const category = await this.categoryRepository.findOne({ where: { id: updateProductDto.category_id } });
       if (!category) {
         {
@@ -271,14 +270,7 @@ export class ProductService {
           }
         }
       }
-      const product = await this.productRepository.findOne({ where: { id: id } });
-      if (product.shop.id !== Shop.id) {
-        return {
-          statusCode: HttpStatus.FORBIDDEN,
-          message: "You don't have permission to update this product",
-          data: null,
-        };
-      }
+      const product = await this.productRepository.findOne({ where: { id: id } });     
       if (updateProductDto.status === 'inactive') {
         const activeGroups = await this.groupRepository.find({ where: { products: { id: id }, status: 'active' } });
         if (activeGroups.length > 0) {
@@ -314,7 +306,6 @@ export class ProductService {
       };
     }
   }
-
 
   async deleteProduct(@Param('id') id: number, @CurrentUser() user: User): Promise<{ message: string, data: Product | null, statusCode: number }> {
     try {  
