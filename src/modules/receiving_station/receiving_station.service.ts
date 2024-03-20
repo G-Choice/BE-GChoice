@@ -58,7 +58,6 @@ export class ReceivingStationService {
             .leftJoinAndSelect('group.products', 'product')
             .offset(skip)
             .limit(take);
-          // Áp dụng điều kiện where nếu trạng thái nhóm đã được chỉ định
           if (statusGroup) {
             query = query.where('group.status = :status', { status: statusGroup });
           }

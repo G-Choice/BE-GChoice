@@ -46,20 +46,17 @@ export class Group {
   @CreateDateColumn({ nullable: true, default: () => 'CURRENT_TIMESTAMP' })
   create_At: Date;
 
-  @Column({ nullable: true })
-  deliveryAddress: string;
-
-  @Column({ nullable: true })
-  phoneNumber: string
-
 
   @Column({ type: 'enum', enum: PositionStatusGroupEnum, default: null })
   @IsNotEmpty()
   status: string;
 
-  @ManyToOne(() => Shop, shop => shop.groups) // Establishing a Many-to-One relationship with Shop
+  @Column({ nullable: true })
+  shipping_code: string;
+
+  @ManyToOne(() => Shop, shop => shop.groups) 
   @JoinColumn({ name: 'shop_id' })
-  shop: Shop; // Assuming each group belongs to a single shop
+  shop: Shop; 
   @UpdateDateColumn({ nullable: true })
   update_At: Date; 
   
