@@ -46,7 +46,6 @@ export class ReceivingStationService {
           if (!user_receivingStation) {
             throw new Error("User not found");
           }
-    
           const receivingStation = await this.receiving_stationRepository.findOne({ where: { user: { id:user_receivingStation.id } } });
           if (!receivingStation) {
             throw new Error("Shop not found");
@@ -54,6 +53,7 @@ export class ReceivingStationService {
           const statusGroup = params.status_group || PositionStatusGroupEnum.WAITING_DELIVERY;
           let query = this.groupRepository
             .createQueryBuilder('group')
+            .innerJoinAndSelect('group.receiving_station', 'receivingStation', 'receivingStation.id = :receivingStationId', { receivingStationId: receivingStation.id })
             .leftJoinAndSelect('group.user_groups', 'user_groups')
             .leftJoinAndSelect('group.products', 'product')
             .offset(skip)
