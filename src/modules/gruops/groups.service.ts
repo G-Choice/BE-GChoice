@@ -21,6 +21,7 @@ import { Shop } from 'src/entities/shop.entity';
 import { GetGroupParams } from './dto/get_group.dto';
 import { PageMetaDto } from 'src/common/dtos/pageMeta';
 import { ResponsePaginate } from 'src/common/dtos/responsePaginate';
+import { Receiving_station } from 'src/entities/receiving_station';
 
 @Injectable()
 export class GruopsService {
@@ -37,6 +38,8 @@ export class GruopsService {
     private readonly shopRepository: Repository<Shop>,
     @InjectRepository(ProductDiscount)
     private readonly ProductDiscountRepository: Repository<ProductDiscount>,
+    @InjectRepository(Receiving_station)
+    private readonly receiving_stationRepository: Repository<Receiving_station>,
     private readonly firebaseRepository: FirebaseRepository
 
   ) { }
@@ -276,6 +279,10 @@ export class GruopsService {
       if (!shop) {
         throw new Error('Shop not found');
       }
+      const receingStation = await this.receiving_stationRepository.findOne({where:{id:data.receingStation_id}});
+      if (!receingStation) {
+        throw new Error('ReceingStation not found');
+      }
       const exitingGroup = await this.usergroupRepository
         .createQueryBuilder('user_group')
         .innerJoin('user_group.groups', 'groups')
@@ -294,6 +301,7 @@ export class GruopsService {
           status: PositionStatusGroupEnum.WAITING_FOR_USER,
           products: product,
           shop: shop,
+          receiving_station:receingStation,
         });
         const savedGroup = await this.groupRepository.save(newGroup);
         const product_discounts = await this.ProductDiscountRepository.find({

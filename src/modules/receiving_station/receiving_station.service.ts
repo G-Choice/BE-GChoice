@@ -1,14 +1,31 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable, NotFoundException, Param } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Receiving_station } from 'src/entities/receiving_station';
 import { Repository } from 'typeorm';
 
+import { User } from 'src/entities/User.entity';
+import { Group } from 'src/entities/group.entity';
+import { User_group } from 'src/entities/user_group.entity';
+import { PositionStatusGroupEnum } from 'src/common/enum/enums';
+import { PageMetaDto } from 'src/common/dtos/pageMeta';
+import { ResponsePaginate } from 'src/common/dtos/responsePaginate';
+import { GetGroupParams } from './dto/get_group.dto';
+import { CurrentUser } from '../guards/user.decorator';
+import { Product } from 'src/entities/product.entity';
+
 @Injectable()
 export class ReceivingStationService {
-
     constructor(
         @InjectRepository(Receiving_station)
         private readonly receiving_stationRepository: Repository<Receiving_station>,
+        @InjectRepository(User)
+        private readonly userRepository: Repository<User>,
+        @InjectRepository(Group)
+        private readonly groupRepository: Repository<Group>,
+        @InjectRepository(User_group)
+        private readonly usergroupRepository: Repository<User_group>,
+        @InjectRepository(Product)
+        private readonly productRepository: Repository<Product>,
     ) { }
 
     async getAllReceivingStation(): Promise<any> {
@@ -19,4 +36,97 @@ export class ReceivingStationService {
             statusCode: HttpStatus.OK
         }
     }
+
+    async getGroupByReceivingStation(params: GetGroupParams, user: User): Promise<any> {
+        try {
+          const page = params.page || 1;
+          const take = params.take || 6;
+          const skip = (page - 1) * take;
+          const user_receivingStation = await this.userRepository.findOne({ where: { id: user.id } });
+          if (!user_receivingStation) {
+            throw new Error("User not found");
+          }
+    
+          const receivingStation = await this.receiving_stationRepository.findOne({ where: { user: { id:user_receivingStation.id } } });
+          if (!receivingStation) {
+            throw new Error("Shop not found");
+          }
+          const statusGroup = params.status_group || PositionStatusGroupEnum.WAITING_DELIVERY;
+          let query = this.groupRepository
+            .createQueryBuilder('group')
+            .leftJoinAndSelect('group.user_groups', 'user_groups')
+            .leftJoinAndSelect('group.products', 'product')
+            .offset(skip)
+            .limit(take);
+          // Áp dụng điều kiện where nếu trạng thái nhóm đã được chỉ định
+          if (statusGroup) {
+            query = query.where('group.status = :status', { status: statusGroup });
+          }
+          const [groups, total] = await query.getManyAndCount();
+          const pageMetaDto = new PageMetaDto({
+            pageOptionsDto: params,
+            itemCount: total,
+          });
+          return new ResponsePaginate(groups, pageMetaDto, 'Success');
+        } catch (error) {
+          return {
+            statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+            message: error.message,
+            data: null
+          };
+        }
+      }
+
+
+      async getItemGroups(@Param('group_id') group_id: number, @CurrentUser() user: User): Promise<any> {
+        const group = await this.groupRepository.findOne({ where: { id: group_id } });
+        const ItemGroups = await this.usergroupRepository
+          .createQueryBuilder('user_group')
+          .leftJoin('user_group.users', 'users')
+          .addSelect(['users.id', 'users.username', 'users.email', 'users.image', 'users.address'])
+          .where('user_group.group_id = :groupId', { groupId: group.id })
+          .getMany();
+        return {
+          data: ItemGroups,
+          message: 'Successfully!'
+        };
+      }
+
+
+      // async confirmOrder(id: number, user: User): Promise<any> {
+      //   try {
+      //     const existingUser = await this.userRepository.findOne({ where: { id: user.id } });
+          
+      //     if (!existingUser) {
+      //       throw new NotFoundException('User does not exist.');
+      //     }
+    
+      //     const existingShop = await this.shopRepository.findOne({ where: { id: existingUser.id } });
+    
+      //     if (!existingShop) {
+      //       throw new NotFoundException('Shop does not exist.');
+      //     }
+    
+      //     const group = await this.groupRepository
+      //       .createQueryBuilder("group")
+      //       .where("group.id = :id", { id: id })
+      //       .getRawOne();
+      //     if (!group) {
+      //       throw new NotFoundException('Group not found');
+      //     }
+    
+      //     if (group.group_shop_id !== existingShop.id) {
+      //       throw new Error('You do not have permission to confirm this order.');
+      //     }
+    
+      //     await this.groupRepository.update({ id: id }, { isConfirm: true, status: PositionStatusGroupEnum.WAITING_DELIVERY });
+    
+      //     return {
+      //       message: 'Group confirmed successfully',
+      //       data: null,
+      //     };
+      //   } catch (error) {
+      //     throw error;
+      //   }
+      // }
 }

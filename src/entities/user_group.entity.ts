@@ -23,6 +23,10 @@ export class User_group {
 
   @Column({ default: false })
   isPayment: boolean;
+  
+  @Column({ default: false })
+  isFetching_items: boolean;
+
 
   @ManyToOne(
     () => User,

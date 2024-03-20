@@ -73,6 +73,7 @@ export class Group {
   @OneToMany(() => User_group, user_group => user_group.groups)
   user_groups: User_group[];
 
-  @ManyToOne(() => Receiving_station, receiving_station => receiving_station.group) 
+  @ManyToOne(() => Receiving_station, receiving_station => receiving_station.group)
+  @JoinColumn({ name: 'receivingStation_id' })
   receiving_station: Receiving_station; 
 }
