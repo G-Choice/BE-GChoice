@@ -7,6 +7,7 @@ import { User } from 'src/entities/User.entity';
 import { JoinGroupDto } from './dto/join_group.dto';
 import { SaveDataPayemntDto } from './dto/save_dataPayment.dto';
 import { GetGroupParams } from './dto/get_group.dto';
+import { GetGroupByUserParams } from './dto/getGroupByUser.dto';
 
 @Controller('groups')
 export class GruopsController {
@@ -20,8 +21,8 @@ export class GruopsController {
     }
     @UseGuards(AuthGuard)
     @Get('/:product_id')
-    async getAllGroups(@Param('product_id') product_id: number, @CurrentUser() user: User): Promise<any> {
-        return this.groupsService.getAllGroups(product_id, user);
+    async getAllGroups(@Param('product_id') product_id: number,@Query() params: GetGroupByUserParams, @CurrentUser() user: User): Promise<any> {
+        return this.groupsService.getAllGroups(product_id,params, user);
 
     }
     @Get('/statusGroup/:group_id')

@@ -23,6 +23,7 @@ import { PageMetaDto } from 'src/common/dtos/pageMeta';
 import { ResponsePaginate } from 'src/common/dtos/responsePaginate';
 import { Receiving_station } from 'src/entities/receiving_station';
 import { randomInt } from 'crypto';
+import { GetGroupByUserParams } from './dto/getGroupByUser.dto';
 @Injectable()
 export class GruopsService {
   constructor(
@@ -44,15 +45,27 @@ export class GruopsService {
 
   ) { }
 
-  async getAllGroups(@Param('product_id') product_id: number, @CurrentUser() user: User): Promise<any> {
+  async getAllGroups(@Param('product_id') product_id: number, params: GetGroupByUserParams,@CurrentUser() user: User): Promise<any> {
     const currentTimestamp = new Date().getTime();
 
-    const groupsByProductId = await this.groupRepository
-      .createQueryBuilder('group')
-      .leftJoinAndSelect('group.receiving_station', 'receiving_station')
-      .where('group.product_id = :product_id', { product_id: product_id })
-      .andWhere('group.status IN (:...statuses)', { statuses: [PositionStatusGroupEnum.WAITING_FOR_USER] })
-      .getMany();
+    let groupsByProductId: any[];
+
+    if (params.receiving_station_id) {
+        groupsByProductId = await this.groupRepository
+            .createQueryBuilder('group')
+            .leftJoinAndSelect('group.receiving_station', 'receiving_station')
+            .where('group.product_id = :product_id', { product_id: product_id })
+            .andWhere('group.receivingStation_id = :receiving_station_id', { receiving_station_id: params.receiving_station_id })
+            .andWhere('group.status IN (:...statuses)', { statuses: [PositionStatusGroupEnum.WAITING_FOR_USER] })
+            .getMany();
+    } else {
+        groupsByProductId = await this.groupRepository
+            .createQueryBuilder('group')
+            .leftJoinAndSelect('group.receiving_station', 'receiving_station')
+            .where('group.product_id = :product_id', { product_id: product_id })
+            .andWhere('group.status IN (:...statuses)', { statuses: [PositionStatusGroupEnum.WAITING_FOR_USER] })
+            .getMany();
+    }
 
     const userGroups = await this.usergroupRepository
       .createQueryBuilder('user_group')
