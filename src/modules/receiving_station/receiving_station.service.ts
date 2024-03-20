@@ -92,40 +92,23 @@ export class ReceivingStationService {
       }
 
 
-      // async confirmOrder(id: number, user: User): Promise<any> {
-      //   try {
-      //     const existingUser = await this.userRepository.findOne({ where: { id: user.id } });
+      async confirmReceivedItem(id: number): Promise<any> {
+        try {
+          const user_group = await this.usergroupRepository.findOne({where: {id: id}})
           
-      //     if (!existingUser) {
-      //       throw new NotFoundException('User does not exist.');
-      //     }
+          if (!user_group) {
+            throw new NotFoundException('User group does not exist.');
+          }
+          
+          user_group.isFetching_items = true; 
+          await this.usergroupRepository.save(user_group); 
     
-      //     const existingShop = await this.shopRepository.findOne({ where: { id: existingUser.id } });
-    
-      //     if (!existingShop) {
-      //       throw new NotFoundException('Shop does not exist.');
-      //     }
-    
-      //     const group = await this.groupRepository
-      //       .createQueryBuilder("group")
-      //       .where("group.id = :id", { id: id })
-      //       .getRawOne();
-      //     if (!group) {
-      //       throw new NotFoundException('Group not found');
-      //     }
-    
-      //     if (group.group_shop_id !== existingShop.id) {
-      //       throw new Error('You do not have permission to confirm this order.');
-      //     }
-    
-      //     await this.groupRepository.update({ id: id }, { isConfirm: true, status: PositionStatusGroupEnum.WAITING_DELIVERY });
-    
-      //     return {
-      //       message: 'Group confirmed successfully',
-      //       data: null,
-      //     };
-      //   } catch (error) {
-      //     throw error;
-      //   }
-      // }
+          return {
+            message: 'User group confirmed successfully', 
+            data: null,
+        };
+        } catch (error) {
+          throw error;
+        }
+      }
 }

@@ -6,7 +6,7 @@ import { AuthGuard } from '../guards/auth.guard';
 import { GetGroupParams } from './dto/get_group.dto';
 
 // lấy tất cả các trạm nhận hàng  done
-// lấy tất cả các order của trạm đó 
+// lấy tất cả các order của trạm đó  done
 // update status khi khách hàng đã nhận hàng
 
 @Controller('receiving-station')
@@ -25,11 +25,10 @@ export class ReceivingStationController {
         return this.receivingStationService.getGroupByReceivingStation(getGroupParams,user);
     }
 
-    // @UseGuards(AuthGuard)
-    // @Put('/confetch_item/:id')
-    // async confirmOrder(@Param('id') id: number, @CurrentUser() user: User): Promise<any> {
-    //     return this.receivingStationService.confirmOrder(id, user);
-    // }
 
+    @Put('/confirm_received_item/:id')
+    async confirmReceivedItem(@Param('id') id: number, ): Promise<any> {
+        return this.receivingStationService.confirmReceivedItem(id);
+    }
 
 }
