@@ -272,7 +272,7 @@ export class ProductService {
       }
       const product = await this.productRepository.findOne({ where: { id: id } });     
       if (updateProductDto.status === 'inactive') {
-        const activeGroups = await this.groupRepository.find({ where: { products: { id: id }, status: 'active' } });
+        const activeGroups = await this.groupRepository.find({ where: { products: { id: id } } });
         if (activeGroups.length > 0) {
           return {
             message: "Product has active groups, cannot be updated to 'inactive'",
