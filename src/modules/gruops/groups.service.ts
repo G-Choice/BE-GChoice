@@ -520,21 +520,17 @@ export class GruopsService {
   async confirmOrder(id: number, user: User): Promise<any> {
     try {
       const existingUser = await this.userRepository.findOne({ where: { id: user.id } });
-
       if (!existingUser) {
         throw new NotFoundException('User does not exist.');
       }
-
       const existingShop = await this.shopRepository.findOne({ where: { id: existingUser.id } });
-
       if (!existingShop) {
         throw new NotFoundException('Shop does not exist.');
       }
-
       const group = await this.groupRepository
         .createQueryBuilder("group")
         .where("group.id = :id", { id: id })
-        .getRawOne();
+        .getRawOne();        
       if (!group) {
         throw new NotFoundException('Group not found');
       }
@@ -542,14 +538,14 @@ export class GruopsService {
       if (group.group_shop_id !== existingShop.id) {
         throw new Error('You do not have permission to confirm this order.');
       }
-
       await this.groupRepository.update({ id: id }, { isConfirm: true, status: PositionStatusGroupEnum.WAITING_DELIVERY });
-      const product = await this.productRepository.findOne(group.product_id);
+      const product = await this.productRepository.findOne({where:{groups:{id:group.id}}});
+      console.log(product);
       const userGroups = await this.usergroupRepository
       .createQueryBuilder('user_group')
       .leftJoin('user_group.users', 'user')
       .select('user.id', 'user_id')
-      .where('user_group.group_id = :groupId', { groupId: group.id })
+      .where('user_group.group_id = :groupId', { groupId: group.group_id })
       .getRawMany();
       const userGroupIds = userGroups.map(userGroup => userGroup.user_id);
       const users = await this.userRepository.find({ where: { id: In(userGroupIds) } });
