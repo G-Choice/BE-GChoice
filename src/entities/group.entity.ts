@@ -5,6 +5,7 @@ import { User } from "./User.entity";
 import { User_group } from "./user_group.entity";
 import { PositionStatusGroupEnum } from "src/common/enum/enums";
 import { Shop } from "./shop.entity";
+import { Receiving_station } from "./receiving_station";
 
 @Entity('groups')
 export class Group {
@@ -45,20 +46,17 @@ export class Group {
   @CreateDateColumn({ nullable: true, default: () => 'CURRENT_TIMESTAMP' })
   create_At: Date;
 
-  @Column({ nullable: true })
-  deliveryAddress: string;
-
-  @Column({ nullable: true })
-  phoneNumber: string
-
 
   @Column({ type: 'enum', enum: PositionStatusGroupEnum, default: null })
   @IsNotEmpty()
   status: string;
 
-  @ManyToOne(() => Shop, shop => shop.groups) // Establishing a Many-to-One relationship with Shop
+  @Column({ nullable: true })
+  shipping_code: string;
+
+  @ManyToOne(() => Shop, shop => shop.groups) 
   @JoinColumn({ name: 'shop_id' })
-  shop: Shop; // Assuming each group belongs to a single shop
+  shop: Shop; 
   @UpdateDateColumn({ nullable: true })
   update_At: Date; 
   
@@ -71,4 +69,8 @@ export class Group {
 
   @OneToMany(() => User_group, user_group => user_group.groups)
   user_groups: User_group[];
+
+  @ManyToOne(() => Receiving_station, receiving_station => receiving_station.group)
+  @JoinColumn({ name: 'receivingStation_id' })
+  receiving_station: Receiving_station; 
 }

@@ -50,6 +50,13 @@ export class createGroupDto {
     product_id: number;
 
     @ApiProperty({
+        description: ' ReceingStation_id.',
+        example: 123
+    })
+    @IsNumber()
+    receingStation_id: number;
+
+    @ApiProperty({
         description: 'Quantity of products.',
         example: 123
     })

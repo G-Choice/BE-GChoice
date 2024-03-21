@@ -9,11 +9,12 @@ import { Group } from 'src/entities/group.entity';
 import { ProductDiscount } from 'src/entities/product_discount.entity';
 import { FirebaseModule } from 'src/firebase/firebase.module';
 import { Shop } from 'src/entities/shop.entity';
+import { Receiving_station } from 'src/entities/receiving_station';
 // import { Group_user_product } from 'src/entities/group_user_product.entity';
 
 @Module({
     imports: [
-      TypeOrmModule.forFeature([Product,User_group,User,Group,ProductDiscount,Shop]),
+      TypeOrmModule.forFeature([Product,User_group,User,Group,ProductDiscount,Shop,Receiving_station]),
       FirebaseModule
     ],
     controllers:[GruopsController],

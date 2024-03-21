@@ -15,13 +15,15 @@ import { ProductDiscount } from 'src/entities/product_discount.entity';
 import { FirebaseRepository } from 'src/firebase/firebase.service';
 import * as admin from 'firebase-admin';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { log } from 'console';
+import { group, log } from 'console';
 import { SaveDataPayemntDto } from './dto/save_dataPayment.dto';
 import { Shop } from 'src/entities/shop.entity';
 import { GetGroupParams } from './dto/get_group.dto';
 import { PageMetaDto } from 'src/common/dtos/pageMeta';
 import { ResponsePaginate } from 'src/common/dtos/responsePaginate';
-
+import { Receiving_station } from 'src/entities/receiving_station';
+import { randomInt } from 'crypto';
+import { GetGroupByUserParams } from './dto/getGroupByUser.dto';
 @Injectable()
 export class GruopsService {
   constructor(
@@ -37,18 +39,33 @@ export class GruopsService {
     private readonly shopRepository: Repository<Shop>,
     @InjectRepository(ProductDiscount)
     private readonly ProductDiscountRepository: Repository<ProductDiscount>,
+    @InjectRepository(Receiving_station)
+    private readonly receiving_stationRepository: Repository<Receiving_station>,
     private readonly firebaseRepository: FirebaseRepository
 
   ) { }
 
-  async getAllGroups(@Param('product_id') product_id: number, @CurrentUser() user: User): Promise<any> {
+  async getAllGroups(@Param('product_id') product_id: number, params: GetGroupByUserParams, @CurrentUser() user: User): Promise<any> {
     const currentTimestamp = new Date().getTime();
 
-    const groupsByProductId = await this.groupRepository
-      .createQueryBuilder('group')
-      .where('group.product_id = :product_id', { product_id: product_id })
-      .andWhere('group.status IN (:...statuses)', { statuses: [PositionStatusGroupEnum.WAITING_FOR_USER] })
-      .getMany();
+    let groupsByProductId: any[];
+
+    if (params.receiving_station_id) {
+      groupsByProductId = await this.groupRepository
+        .createQueryBuilder('group')
+        .leftJoinAndSelect('group.receiving_station', 'receiving_station')
+        .where('group.product_id = :product_id', { product_id: product_id })
+        .andWhere('group.receivingStation_id = :receiving_station_id', { receiving_station_id: params.receiving_station_id })
+        .andWhere('group.status IN (:...statuses)', { statuses: [PositionStatusGroupEnum.WAITING_FOR_USER] })
+        .getMany();
+    } else {
+      groupsByProductId = await this.groupRepository
+        .createQueryBuilder('group')
+        .leftJoinAndSelect('group.receiving_station', 'receiving_station')
+        .where('group.product_id = :product_id', { product_id: product_id })
+        .andWhere('group.status IN (:...statuses)', { statuses: [PositionStatusGroupEnum.WAITING_FOR_USER] })
+        .getMany();
+    }
 
     const userGroups = await this.usergroupRepository
       .createQueryBuilder('user_group')
@@ -90,6 +107,7 @@ export class GruopsService {
   async getItemGroups(@Param('group_id') group_id: number, @CurrentUser() user: User): Promise<any> {
     const currentTimestamp = new Date().getTime();
     const group = await this.groupRepository.findOne({ where: { id: group_id } });
+    const receingStation = await this.receiving_stationRepository.findOne({ where: { group: { id: group.id } } });
     const productByGroup = await this.productRepository.findOne({ where: { groups: { id: group_id } } });
     let remainingHours = (group.expiration_time.getTime() - currentTimestamp) / (1000 * 60 * 60);
     if (remainingHours < 0) {
@@ -122,6 +140,7 @@ export class GruopsService {
     }
     return {
       data: ItemGroups,
+      receingStation,
       totalPrice,
       remainingHours,
       productByGroup,
@@ -147,6 +166,7 @@ export class GruopsService {
       const statusGroup = params.status_group || PositionStatusGroupEnum.WAITING_CONFIRMATION_ORDER;
       let query = this.groupRepository
         .createQueryBuilder('group')
+        .leftJoinAndSelect('group.receiving_station', 'receiving_station')
         .leftJoinAndSelect('group.user_groups', 'user_groups')
         .leftJoinAndSelect('group.products', 'product')
         .offset(skip)
@@ -211,7 +231,10 @@ export class GruopsService {
         .innerJoin("user_group.groups", "group")
         .where("user_group.users.id = :userId", { userId: user.id })
         .getRawMany();
+      console.log(user_group);
+
       const group_ids = user_group.map(userGroup => userGroup.group_id);
+      console.log(group_ids);
       const groups = await this.groupRepository
         .createQueryBuilder("group")
         .select([
@@ -224,25 +247,35 @@ export class GruopsService {
           'group.isConfirm AS isConfirm',
           'group.expiration_time AS expiration_time',
           'group.create_At AS create_At',
-          'group.deliveryAddress AS deliveryAddress',
-          'group.phoneNumber AS phoneNumber',
+          'group.shipping_code AS shipping_code',
           'group.status AS status',
           'group.update_At AS update_At',
           'group.product_id AS product_id',
+          'group.receivingStation_id AS receivingStation_id',
         ])
         .where("group.id IN (:...groupIds)", { groupIds: group_ids })
         .getRawMany();
-
+      console.log(groups);
       // Finding products associated with groups
       const productIds = groups.map(group => group.product_id);
       const products = await this.productRepository
         .createQueryBuilder("product")
         .where("product.id IN (:...productIds)", { productIds: productIds })
         .getMany();
+      // Lấy danh sách id của các trạm tương ứng
+      const receivingStationIds = groups.map(group => group.receivingstation_id);
+      console.log(receivingStationIds);
 
-      // Associate products with groups
+      const receivingStations = await this.receiving_stationRepository
+        .createQueryBuilder("receivingStation")
+        .where("receivingStation.id IN (:...receivingStationIds)", { receivingStationIds: receivingStationIds })
+        .getMany();
+      console.log(receivingStations);
+
       groups.forEach(group => {
         group.products = products.filter(product => product.id === group.product_id);
+        // Thêm thông tin trạm vào nhóm
+        group.receivingStation = receivingStations.find(station => station.id === group.receivingstation_id);
         let remainingHours = (group.expiration_time.getTime() - currentTimestamp) / (1000 * 60 * 60);
         group.remainingHours = remainingHours < 0 ? 0 : remainingHours; // Add remainingHours to group
       });
@@ -253,7 +286,10 @@ export class GruopsService {
         data: groups
       };
     } catch (error) {
-      throw new Error("Error retrieving user's groups.");
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message
+      };
     }
   }
 
@@ -276,6 +312,10 @@ export class GruopsService {
       if (!shop) {
         throw new Error('Shop not found');
       }
+      const receingStation = await this.receiving_stationRepository.findOne({ where: { id: data.receingStation_id } });
+      if (!receingStation) {
+        throw new Error('ReceingStation not found');
+      }
       const exitingGroup = await this.usergroupRepository
         .createQueryBuilder('user_group')
         .innerJoin('user_group.groups', 'groups')
@@ -285,6 +325,7 @@ export class GruopsService {
         .getCount();
 
       if (exitingGroup < 1) {
+        const randomCode = '#' + (100000 + randomInt(900000)).toString().slice(1);
         const newGroup = this.groupRepository.create({
           group_name: data.group_name,
           description: data.description,
@@ -294,6 +335,8 @@ export class GruopsService {
           status: PositionStatusGroupEnum.WAITING_FOR_USER,
           products: product,
           shop: shop,
+          receiving_station: receingStation,
+          shipping_code: randomCode,
         });
         const savedGroup = await this.groupRepository.save(newGroup);
         const product_discounts = await this.ProductDiscountRepository.find({
@@ -477,21 +520,17 @@ export class GruopsService {
   async confirmOrder(id: number, user: User): Promise<any> {
     try {
       const existingUser = await this.userRepository.findOne({ where: { id: user.id } });
-      
       if (!existingUser) {
         throw new NotFoundException('User does not exist.');
       }
-
       const existingShop = await this.shopRepository.findOne({ where: { id: existingUser.id } });
-
       if (!existingShop) {
         throw new NotFoundException('Shop does not exist.');
       }
-
       const group = await this.groupRepository
         .createQueryBuilder("group")
         .where("group.id = :id", { id: id })
-        .getRawOne();
+        .getRawOne();        
       if (!group) {
         throw new NotFoundException('Group not found');
       }
@@ -499,8 +538,25 @@ export class GruopsService {
       if (group.group_shop_id !== existingShop.id) {
         throw new Error('You do not have permission to confirm this order.');
       }
-
       await this.groupRepository.update({ id: id }, { isConfirm: true, status: PositionStatusGroupEnum.WAITING_DELIVERY });
+      const product = await this.productRepository.findOne({where:{groups:{id:group.id}}});
+      console.log(product);
+      const userGroups = await this.usergroupRepository
+      .createQueryBuilder('user_group')
+      .leftJoin('user_group.users', 'user')
+      .select('user.id', 'user_id')
+      .where('user_group.group_id = :groupId', { groupId: group.group_id })
+      .getRawMany();
+      const userGroupIds = userGroups.map(userGroup => userGroup.user_id);
+      const users = await this.userRepository.find({ where: { id: In(userGroupIds) } });
+      console.log(users);
+      for (const user of users) {
+        const send = await this.firebaseRepository.sendPushNotification(user.fcmToken, {
+          title: 'G-Choice Notification',
+          body: `The group for ${product.product_name} has been confirmed.`
+        });
+        console.log(send);
+      }
 
       return {
         message: 'Group confirmed successfully',
@@ -510,14 +566,12 @@ export class GruopsService {
       throw error;
     }
   }
+
   async saveDataPayment(@Body() saveDataPaymentDto: SaveDataPayemntDto, user: User): Promise<any> {
     const group = await this.groupRepository.findOne({ where: { id: saveDataPaymentDto.group_id } })
     if (!group) {
       throw new Error("Group not found");
     }
-    group.deliveryAddress = saveDataPaymentDto.deliveryAddress;
-    group.phoneNumber = saveDataPaymentDto.phoneNumber;
-    await this.groupRepository.save(group);
     console.log(group);
     const userGroup = await this.usergroupRepository.findOne({ where: { users: { id: user.id }, groups: { id: saveDataPaymentDto.group_id } } });
     if (userGroup) {
@@ -574,4 +628,29 @@ export class GruopsService {
 
 
 
+  @Cron(CronExpression.EVERY_MINUTE)
+  async checkProcessPaymentForUser() {
+    const groups = await this.groupRepository.find({ where: { status: PositionStatusGroupEnum.WAITING_FOR_PAYMENT } });
+    for (const group of groups) {
+      const userGroups = await this.usergroupRepository.find({ where: { groups: { id: group.id } } });
+      const allUsersPaid = userGroups.every(userGroup => userGroup.isPayment);
+      if (allUsersPaid) {
+        group.status = PositionStatusGroupEnum.WAITING_CONFIRMATION_ORDER;
+        await this.groupRepository.save(group);
+      }
+    }
+  }
+
+  @Cron(CronExpression.EVERY_MINUTE)
+  async checkProcessFetching_itemsForUser() {
+    const groups = await this.groupRepository.find({ where: { status: PositionStatusGroupEnum.FETCHING_ITEMS } });
+    for (const group of groups) {
+      const userGroups = await this.usergroupRepository.find({ where: { groups: { id: group.id } } });
+      const allUsersPaid = userGroups.every(userGroup => userGroup.isFetching_items);
+      if (allUsersPaid) {
+        group.status = PositionStatusGroupEnum.COMPLETED;
+        await this.groupRepository.save(group);
+      }
+    }
+  }
 }

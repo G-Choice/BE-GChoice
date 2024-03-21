@@ -1,4 +1,4 @@
-import { Body, HttpStatus, Injectable, Param } from '@nestjs/common';
+import { Body, HttpStatus, Injectable, NotFoundException, Param } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Category } from 'src/entities/category.entity';
 import { In, Repository } from 'typeorm';
@@ -33,6 +33,11 @@ export class CategoryService {
 
     async createCategory(@Body() createCategoryDto: CreateCategoryDto, @CurrentUser() user: User,): Promise<{ message: string, data: Category, statusCode: number }> {
         const Shop = await this.shopRepository.findOne({ where: { user: { id: user.id } } });
+        const existingCategory = await this.categoryRepository.findOne({ where: { category_name: createCategoryDto.category_name } });
+
+        if (existingCategory) {
+            throw new NotFoundException('Category with this name already exists.');
+        }
         const newCategory = new Category();
         newCategory.category_name = createCategoryDto.category_name;
         newCategory.shop = Shop;
