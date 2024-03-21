@@ -51,6 +51,7 @@ export class ReceivingStationService {
             throw new Error("Shop not found");
           }
           const statusGroup = params.status_group || PositionStatusGroupEnum.WAITING_DELIVERY;
+          const shippingCode = params.shipping_code || '';
           let query = this.groupRepository
             .createQueryBuilder('group')
             .innerJoinAndSelect('group.receiving_station', 'receivingStation', 'receivingStation.id = :receivingStationId', { receivingStationId: receivingStation.id })
@@ -61,6 +62,9 @@ export class ReceivingStationService {
           if (statusGroup) {
             query = query.where('group.status = :status', { status: statusGroup });
           }
+          if (shippingCode) {
+            query = query.andWhere('group.shipping_code = :shippingCode', { shippingCode });
+        }
           const [groups, total] = await query.getManyAndCount();
           const pageMetaDto = new PageMetaDto({
             pageOptionsDto: params,
