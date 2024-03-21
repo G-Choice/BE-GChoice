@@ -45,26 +45,26 @@ export class GruopsService {
 
   ) { }
 
-  async getAllGroups(@Param('product_id') product_id: number, params: GetGroupByUserParams,@CurrentUser() user: User): Promise<any> {
+  async getAllGroups(@Param('product_id') product_id: number, params: GetGroupByUserParams, @CurrentUser() user: User): Promise<any> {
     const currentTimestamp = new Date().getTime();
 
     let groupsByProductId: any[];
 
     if (params.receiving_station_id) {
-        groupsByProductId = await this.groupRepository
-            .createQueryBuilder('group')
-            .leftJoinAndSelect('group.receiving_station', 'receiving_station')
-            .where('group.product_id = :product_id', { product_id: product_id })
-            .andWhere('group.receivingStation_id = :receiving_station_id', { receiving_station_id: params.receiving_station_id })
-            .andWhere('group.status IN (:...statuses)', { statuses: [PositionStatusGroupEnum.WAITING_FOR_USER] })
-            .getMany();
+      groupsByProductId = await this.groupRepository
+        .createQueryBuilder('group')
+        .leftJoinAndSelect('group.receiving_station', 'receiving_station')
+        .where('group.product_id = :product_id', { product_id: product_id })
+        .andWhere('group.receivingStation_id = :receiving_station_id', { receiving_station_id: params.receiving_station_id })
+        .andWhere('group.status IN (:...statuses)', { statuses: [PositionStatusGroupEnum.WAITING_FOR_USER] })
+        .getMany();
     } else {
-        groupsByProductId = await this.groupRepository
-            .createQueryBuilder('group')
-            .leftJoinAndSelect('group.receiving_station', 'receiving_station')
-            .where('group.product_id = :product_id', { product_id: product_id })
-            .andWhere('group.status IN (:...statuses)', { statuses: [PositionStatusGroupEnum.WAITING_FOR_USER] })
-            .getMany();
+      groupsByProductId = await this.groupRepository
+        .createQueryBuilder('group')
+        .leftJoinAndSelect('group.receiving_station', 'receiving_station')
+        .where('group.product_id = :product_id', { product_id: product_id })
+        .andWhere('group.status IN (:...statuses)', { statuses: [PositionStatusGroupEnum.WAITING_FOR_USER] })
+        .getMany();
     }
 
     const userGroups = await this.usergroupRepository
@@ -107,7 +107,7 @@ export class GruopsService {
   async getItemGroups(@Param('group_id') group_id: number, @CurrentUser() user: User): Promise<any> {
     const currentTimestamp = new Date().getTime();
     const group = await this.groupRepository.findOne({ where: { id: group_id } });
-    const receingStation = await this.receiving_stationRepository.findOne({ where: {group:{id:group.id}} });
+    const receingStation = await this.receiving_stationRepository.findOne({ where: { group: { id: group.id } } });
     const productByGroup = await this.productRepository.findOne({ where: { groups: { id: group_id } } });
     let remainingHours = (group.expiration_time.getTime() - currentTimestamp) / (1000 * 60 * 60);
     if (remainingHours < 0) {
@@ -544,6 +544,23 @@ export class GruopsService {
       }
 
       await this.groupRepository.update({ id: id }, { isConfirm: true, status: PositionStatusGroupEnum.WAITING_DELIVERY });
+      const product = await this.productRepository.findOne(group.product_id);
+      const userGroups = await this.usergroupRepository
+      .createQueryBuilder('user_group')
+      .leftJoin('user_group.users', 'user')
+      .select('user.id', 'user_id')
+      .where('user_group.group_id = :groupId', { groupId: group.id })
+      .getRawMany();
+      const userGroupIds = userGroups.map(userGroup => userGroup.user_id);
+      const users = await this.userRepository.find({ where: { id: In(userGroupIds) } });
+      console.log(users);
+      for (const user of users) {
+        const send = await this.firebaseRepository.sendPushNotification(user.fcmToken, {
+          title: 'G-Choice Notification',
+          body: `The group for ${product.product_name} has been confirmed.`
+        });
+        console.log(send);
+      }
 
       return {
         message: 'Group confirmed successfully',
@@ -553,6 +570,7 @@ export class GruopsService {
       throw error;
     }
   }
+
   async saveDataPayment(@Body() saveDataPaymentDto: SaveDataPayemntDto, user: User): Promise<any> {
     const group = await this.groupRepository.findOne({ where: { id: saveDataPaymentDto.group_id } })
     if (!group) {
@@ -614,4 +632,29 @@ export class GruopsService {
 
 
 
+  @Cron(CronExpression.EVERY_MINUTE)
+  async checkProcessPaymentForUser() {
+    const groups = await this.groupRepository.find({ where: { status: PositionStatusGroupEnum.WAITING_FOR_PAYMENT } });
+    for (const group of groups) {
+      const userGroups = await this.usergroupRepository.find({ where: { groups: { id: group.id } } });
+      const allUsersPaid = userGroups.every(userGroup => userGroup.isPayment);
+      if (allUsersPaid) {
+        group.status = PositionStatusGroupEnum.WAITING_CONFIRMATION_ORDER;
+        await this.groupRepository.save(group);
+      }
+    }
+  }
+
+  @Cron(CronExpression.EVERY_MINUTE)
+  async checkProcessFetching_itemsForUser() {
+    const groups = await this.groupRepository.find({ where: { status: PositionStatusGroupEnum.FETCHING_ITEMS } });
+    for (const group of groups) {
+      const userGroups = await this.usergroupRepository.find({ where: { groups: { id: group.id } } });
+      const allUsersPaid = userGroups.every(userGroup => userGroup.isFetching_items);
+      if (allUsersPaid) {
+        group.status = PositionStatusGroupEnum.COMPLETED;
+        await this.groupRepository.save(group);
+      }
+    }
+  }
 }
