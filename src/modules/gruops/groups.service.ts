@@ -574,12 +574,20 @@ export class GruopsService {
     }
     console.log(group);
     const userGroup = await this.usergroupRepository.findOne({ where: { users: { id: user.id }, groups: { id: saveDataPaymentDto.group_id } } });
+    console.log(userGroup);
+    
     if (userGroup) {
       userGroup.isPayment = true;
       await this.usergroupRepository.save(userGroup);
     } else {
       throw new Error("User group not found");
     }
+    const userGroups = await this.usergroupRepository.find({ where: { groups: { id: group.id } } });
+      const allUsersPaid = userGroups.every(userGroup => userGroup.isPayment);
+      if (allUsersPaid) {
+        group.status = PositionStatusGroupEnum.WAITING_CONFIRMATION_ORDER;
+        await this.groupRepository.save(group);
+      }
     return {
       message: "Data payment saved successfully",
       status: 200,
@@ -625,32 +633,4 @@ export class GruopsService {
     }
   }
 
-
-
-
-  @Cron(CronExpression.EVERY_MINUTE)
-  async checkProcessPaymentForUser() {
-    const groups = await this.groupRepository.find({ where: { status: PositionStatusGroupEnum.WAITING_FOR_PAYMENT } });
-    for (const group of groups) {
-      const userGroups = await this.usergroupRepository.find({ where: { groups: { id: group.id } } });
-      const allUsersPaid = userGroups.every(userGroup => userGroup.isPayment);
-      if (allUsersPaid) {
-        group.status = PositionStatusGroupEnum.WAITING_CONFIRMATION_ORDER;
-        await this.groupRepository.save(group);
-      }
-    }
-  }
-
-  @Cron(CronExpression.EVERY_MINUTE)
-  async checkProcessFetching_itemsForUser() {
-    const groups = await this.groupRepository.find({ where: { status: PositionStatusGroupEnum.FETCHING_ITEMS } });
-    for (const group of groups) {
-      const userGroups = await this.usergroupRepository.find({ where: { groups: { id: group.id } } });
-      const allUsersPaid = userGroups.every(userGroup => userGroup.isFetching_items);
-      if (allUsersPaid) {
-        group.status = PositionStatusGroupEnum.COMPLETED;
-        await this.groupRepository.save(group);
-      }
-    }
-  }
 }

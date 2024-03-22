@@ -15,104 +15,114 @@ import { Product } from 'src/entities/product.entity';
 
 @Injectable()
 export class ReceivingStationService {
-    constructor(
-        @InjectRepository(Receiving_station)
-        private readonly receiving_stationRepository: Repository<Receiving_station>,
-        @InjectRepository(User)
-        private readonly userRepository: Repository<User>,
-        @InjectRepository(Group)
-        private readonly groupRepository: Repository<Group>,
-        @InjectRepository(User_group)
-        private readonly usergroupRepository: Repository<User_group>,
-        @InjectRepository(Product)
-        private readonly productRepository: Repository<Product>,
-    ) { }
+  constructor(
+    @InjectRepository(Receiving_station)
+    private readonly receiving_stationRepository: Repository<Receiving_station>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+    @InjectRepository(Group)
+    private readonly groupRepository: Repository<Group>,
+    @InjectRepository(User_group)
+    private readonly usergroupRepository: Repository<User_group>,
+    @InjectRepository(Product)
+    private readonly productRepository: Repository<Product>,
+  ) { }
 
-    async getAllReceivingStation(): Promise<any> {
-        const receiving_station = await this.receiving_stationRepository.find()
-        return {
-            data: receiving_station,
-            message: 'Get all receiving station successfully',
-            statusCode: HttpStatus.OK
-        }
+  async getAllReceivingStation(): Promise<any> {
+    const receiving_station = await this.receiving_stationRepository.find()
+    return {
+      data: receiving_station,
+      message: 'Get all receiving station successfully',
+      statusCode: HttpStatus.OK
     }
+  }
 
-    async getGroupByReceivingStation(params: GetGroupParams, user: User): Promise<any> {
-        try {
-          const page = params.page || 1;
-          const take = params.take || 6;
-          const skip = (page - 1) * take;
-          const user_receivingStation = await this.userRepository.findOne({ where: { id: user.id } });
-          if (!user_receivingStation) {
-            throw new Error("User not found");
-          }
-          const receivingStation = await this.receiving_stationRepository.findOne({ where: { user: { id:user_receivingStation.id } } });
-          if (!receivingStation) {
-            throw new Error("Shop not found");
-          }
-          const statusGroup = params.status_group || PositionStatusGroupEnum.WAITING_DELIVERY;
-          const shippingCode = params.shipping_code || '';
-          let query = this.groupRepository
-            .createQueryBuilder('group')
-            .innerJoinAndSelect('group.receiving_station', 'receivingStation', 'receivingStation.id = :receivingStationId', { receivingStationId: receivingStation.id })
-            .leftJoinAndSelect('group.user_groups', 'user_groups')
-            .leftJoinAndSelect('group.products', 'product')
-            .offset(skip)
-            .limit(take);
-          if (statusGroup) {
-            query = query.where('group.status = :status', { status: statusGroup });
-          }
-          if (shippingCode) {
-            query = query.andWhere('group.shipping_code = :shippingCode', { shippingCode });
-        }
-          const [groups, total] = await query.getManyAndCount();
-          const pageMetaDto = new PageMetaDto({
-            pageOptionsDto: params,
-            itemCount: total,
-          });
-          return new ResponsePaginate(groups, pageMetaDto, 'Success');
-        } catch (error) {
-          return {
-            statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-            message: error.message,
-            data: null
-          };
-        }
+  async getGroupByReceivingStation(params: GetGroupParams, user: User): Promise<any> {
+    try {
+      const page = params.page || 1;
+      const take = params.take || 6;
+      const skip = (page - 1) * take;
+      const user_receivingStation = await this.userRepository.findOne({ where: { id: user.id } });
+      if (!user_receivingStation) {
+        throw new Error("User not found");
+      }
+      const receivingStation = await this.receiving_stationRepository.findOne({ where: { user: { id: user_receivingStation.id } } });
+      if (!receivingStation) {
+        throw new Error("Shop not found");
+      }
+      const statusGroup = params.status_group || PositionStatusGroupEnum.WAITING_DELIVERY;
+      const shippingCode = params.shipping_code || '';
+      let query = this.groupRepository
+        .createQueryBuilder('group')
+        .innerJoinAndSelect('group.receiving_station', 'receivingStation', 'receivingStation.id = :receivingStationId', { receivingStationId: receivingStation.id })
+        .leftJoinAndSelect('group.user_groups', 'user_groups')
+        .leftJoinAndSelect('group.products', 'product')
+        .offset(skip)
+        .limit(take);
+      if (statusGroup) {
+        query = query.where('group.status = :status', { status: statusGroup });
+      }
+      if (shippingCode) {
+        query = query.andWhere('group.shipping_code = :shippingCode', { shippingCode });
+      }
+      const [groups, total] = await query.getManyAndCount();
+      const pageMetaDto = new PageMetaDto({
+        pageOptionsDto: params,
+        itemCount: total,
+      });
+      return new ResponsePaginate(groups, pageMetaDto, 'Success');
+    } catch (error) {
+      return {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: error.message,
+        data: null
+      };
+    }
+  }
+
+
+  async getItemGroups(@Param('group_id') group_id: number, @CurrentUser() user: User): Promise<any> {
+    const group = await this.groupRepository.findOne({ where: { id: group_id } });
+    const ItemGroups = await this.usergroupRepository
+      .createQueryBuilder('user_group')
+      .leftJoin('user_group.users', 'users')
+      .addSelect(['users.id', 'users.username', 'users.email', 'users.image', 'users.address'])
+      .where('user_group.group_id = :groupId', { groupId: group.id })
+      .getMany();
+    return {
+      data: ItemGroups,
+      message: 'Successfully!'
+    };
+  }
+
+
+  async confirmReceivedItem(id: number): Promise<any> {
+    try {
+
+      const user_group = await this.usergroupRepository.findOne({ where: { id: id } })
+      console.log('====================================');
+      console.log(user_group);
+      console.log('====================================');
+      if (!user_group) {
+        throw new NotFoundException('User group does not exist.');
       }
 
-
-      async getItemGroups(@Param('group_id') group_id: number, @CurrentUser() user: User): Promise<any> {
-        const group = await this.groupRepository.findOne({ where: { id: group_id } });
-        const ItemGroups = await this.usergroupRepository
-          .createQueryBuilder('user_group')
-          .leftJoin('user_group.users', 'users')
-          .addSelect(['users.id', 'users.username', 'users.email', 'users.image', 'users.address'])
-          .where('user_group.group_id = :groupId', { groupId: group.id })
-          .getMany();
-        return {
-          data: ItemGroups,
-          message: 'Successfully!'
-        };
+      user_group.isFetching_items = true;
+      await this.usergroupRepository.save(user_group);
+      const group = await this.groupRepository.findOne({ where: {user_groups:{ id: user_group.id } }})
+      const userGroups = await this.usergroupRepository.find({ where: { groups: { id: group.id } } });
+      console.log(userGroups);  
+      const allUsersPaid = userGroups.every(userGroup => userGroup.isFetching_items);
+      if (allUsersPaid) {
+        group.status = PositionStatusGroupEnum.COMPLETED;
+        await this.groupRepository.save(group);
       }
-
-
-      async confirmReceivedItem(id: number): Promise<any> {
-        try {
-          const user_group = await this.usergroupRepository.findOne({where: {id: id}})
-          
-          if (!user_group) {
-            throw new NotFoundException('User group does not exist.');
-          }
-          
-          user_group.isFetching_items = true; 
-          await this.usergroupRepository.save(user_group); 
-    
-          return {
-            message: 'User group confirmed successfully', 
-            data: null,
-        };
-        } catch (error) {
-          throw error;
-        }
-      }
+      return {
+        message: 'User group confirmed successfully',
+        data: null,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
 }
