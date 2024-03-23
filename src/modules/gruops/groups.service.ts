@@ -24,6 +24,7 @@ import { ResponsePaginate } from 'src/common/dtos/responsePaginate';
 import { Receiving_station } from 'src/entities/receiving_station';
 import { randomInt } from 'crypto';
 import { GetGroupByUserParams } from './dto/getGroupByUser.dto';
+import { Notifications } from 'src/entities/notification.entity';
 @Injectable()
 export class GruopsService {
   constructor(
@@ -41,6 +42,8 @@ export class GruopsService {
     private readonly ProductDiscountRepository: Repository<ProductDiscount>,
     @InjectRepository(Receiving_station)
     private readonly receiving_stationRepository: Repository<Receiving_station>,
+    @InjectRepository(Notifications)
+    private readonly notificationsRepository: Repository<Notifications>,
     private readonly firebaseRepository: FirebaseRepository
 
   ) { }
@@ -375,10 +378,16 @@ export class GruopsService {
           try {
             await this.firebaseRepository.sendPushNotification(existingUser.fcmToken, {
               title: 'G-Choice notification',
-              body: `The group ${product.product_name} has enough participants. Please confirm your order.`
+              body: `The group ${product.product_name} has enough participants. Please proceed to payment for your order.`
             });
             savedGroup.status = PositionStatusGroupEnum.WAITING_FOR_PAYMENT;
             await this.groupRepository.save(savedGroup);
+
+            const newNotificaton = new Notifications();
+            newNotificaton.title = 'G-Choice notification';
+            newNotificaton.body = `The group ${product.product_name} has enough participants. Please proceed to payment for your order.`;
+            newNotificaton.user = existingUser;
+            await this.notificationsRepository.save(newNotificaton);
           } catch (error) {
             console.error('Failed to send Firebase notification:', error);
           }
@@ -421,7 +430,7 @@ export class GruopsService {
         }
       });
       if (!product) {
-        throw new Error('Product not found');
+        throw new Error('Group not found');
       }
       if (product.status === 'maintaining') {
         throw new Error('This product is currently under maintenance. Please try again later.');
@@ -429,10 +438,10 @@ export class GruopsService {
 
       const notAllowedStatus = [
         'waiting_for_payment',
-        'payment_success',
-        'confirmation_order',
+        'waiting_confirmation_order',
         'waiting_delivery',
-        'done'
+        'fetching_items',
+        'completed',
       ];
       const findGroup = await this.groupRepository.findOne({ where: { id: joinGroupDto.group_id } });
       if (findGroup && notAllowedStatus.includes(findGroup.status)) {
@@ -465,7 +474,10 @@ export class GruopsService {
         newUser_group.quantity = joinGroupDto.quantity_product;
         newUser_group.price = (product.price - (product.price * discountPercentage / 100)) * joinGroupDto.quantity_product;
         await this.usergroupRepository.save(newUser_group);
-        const item_groups = await this.usergroupRepository.find({ where: { groups: { id: findGroup.id } } })
+        const item_groups = await this.usergroupRepository.find({ where: { groups: { id: joinGroupDto.group_id } } })
+        console.log('====================================');
+        console.log(item_groups );
+        console.log('====================================');
         for (const item_group of item_groups) {
           item_group.price = (product.price - (product.price * discountPercentage / 100)) * item_group.quantity;
           await this.usergroupRepository.save(item_group);
@@ -493,10 +505,14 @@ export class GruopsService {
           for (const user of users) {
             const send = await this.firebaseRepository.sendPushNotification(user.fcmToken, {
               title: 'G-Choice Notification',
-              body: `The group ${product.product_name} has enough participants. Please confirm your order.`
+              body: `The group ${product.product_name} has enough participants. Please proceed to payment for your order.`
             });
             console.log(send);
-
+            const newNotificaton = new Notifications();
+            newNotificaton.title = 'G-Choice notification';
+            newNotificaton.body = `The group ${product.product_name} has enough participants. Please proceed to payment for your order.`;
+            newNotificaton.user = user;
+            await this.notificationsRepository.save(newNotificaton);
           }
           findGroup.status = PositionStatusGroupEnum.WAITING_FOR_PAYMENT;
           await this.groupRepository.save(findGroup);
@@ -516,6 +532,80 @@ export class GruopsService {
     }
   }
 
+  async removeUserFromGroup(group_id: number, user: User): Promise<any> {
+    try {
+      const existingUser = await this.userRepository.findOne({ where: { id: user.id } });
+      if (!existingUser) {
+        throw new NotFoundException('User does not exist.');
+      }
+      const notAllowedStatus = [
+        'waiting_for_payment',
+        'waiting_confirmation_order',
+        'waiting_delivery',
+        'fetching_items',
+        'completed',
+      ];
+      const findGroup = await this.groupRepository.findOne({ where: { id: group_id } });
+      if (findGroup && notAllowedStatus.includes(findGroup.status)) {
+        throw new Error('Cannot remove the group');
+      }
+      const existingUserGroup = await this.usergroupRepository.findOne({ where: { groups: { id: group_id }, users: { id: user.id } } });
+      if (existingUserGroup) {
+        findGroup.current_quantity -= existingUserGroup.quantity;
+        await this.groupRepository.save(findGroup);
+        await this.usergroupRepository.delete(existingUserGroup.id);
+      } else {
+        throw new NotFoundException('You have not joined this group.');
+      }
+      return {
+        message: 'User removed from group successfully',
+        data: null,
+      };
+    } catch (error) {
+      return {
+        message: error.message || 'Failed to remove user from group',
+        data: null,
+      };
+    }
+  }
+  async deleteGroup(group_id: number, user: User): Promise<any> {
+    try {
+      const existingUser = await this.userRepository.findOne({ where: { id: user.id } });
+      if (!existingUser) {
+        throw new NotFoundException('User does not exist.');
+      }
+        const existingUserGroup = await this.usergroupRepository.findOne({ where: { groups: { id: group_id }, users: { id: user.id }, role: PositionGroupEnum.LEADER } });
+        if (!existingUserGroup) {
+            throw new Error('Only group leaders can delete the group');
+        }
+      const notAllowedStatus = [
+        'waiting_for_payment',
+        'waiting_confirmation_order',
+        'waiting_delivery',
+        'fetching_items',
+        'completed',
+      ];
+      const findGroup = await this.groupRepository.findOne({ where: { id: group_id } });
+      if (findGroup && notAllowedStatus.includes(findGroup.status)) {
+        throw new Error('Cannot delete the group');
+      }
+      const existingUserGroups = await this.usergroupRepository.find({ where: { groups: { id: group_id } }});
+      await Promise.all(existingUserGroups.map(async (userGroup) => {
+        await this.usergroupRepository.remove(userGroup); 
+    }));
+    await this.groupRepository.delete(group_id);
+      return {
+        message: 'delete group successfully',
+        data: null,
+      };
+    } catch (error) {
+      return {
+        message: error.message || 'Failed to delete group',
+        data: null,
+      };
+    }
+  }
+
 
   async confirmOrder(id: number, user: User): Promise<any> {
     try {
@@ -530,7 +620,7 @@ export class GruopsService {
       const group = await this.groupRepository
         .createQueryBuilder("group")
         .where("group.id = :id", { id: id })
-        .getRawOne();        
+        .getRawOne();
       if (!group) {
         throw new NotFoundException('Group not found');
       }
@@ -539,14 +629,14 @@ export class GruopsService {
         throw new Error('You do not have permission to confirm this order.');
       }
       await this.groupRepository.update({ id: id }, { isConfirm: true, status: PositionStatusGroupEnum.WAITING_DELIVERY });
-      const product = await this.productRepository.findOne({where:{groups:{id:group.id}}});
+      const product = await this.productRepository.findOne({ where: { groups: { id: group.id } } });
       console.log(product);
       const userGroups = await this.usergroupRepository
-      .createQueryBuilder('user_group')
-      .leftJoin('user_group.users', 'user')
-      .select('user.id', 'user_id')
-      .where('user_group.group_id = :groupId', { groupId: group.group_id })
-      .getRawMany();
+        .createQueryBuilder('user_group')
+        .leftJoin('user_group.users', 'user')
+        .select('user.id', 'user_id')
+        .where('user_group.group_id = :groupId', { groupId: group.group_id })
+        .getRawMany();
       const userGroupIds = userGroups.map(userGroup => userGroup.user_id);
       const users = await this.userRepository.find({ where: { id: In(userGroupIds) } });
       console.log(users);
@@ -556,7 +646,12 @@ export class GruopsService {
           body: `The group for ${product.product_name} has been confirmed.`
         });
         console.log(send);
-      }
+        const newNotificaton = new Notifications();
+        newNotificaton.title = 'G-Choice notification';
+        newNotificaton.body = `The group for ${product.product_name} has been confirmed.`;
+        newNotificaton.user = user;
+        await this.notificationsRepository.save(newNotificaton);
+      };
 
       return {
         message: 'Group confirmed successfully',
@@ -575,7 +670,7 @@ export class GruopsService {
     console.log(group);
     const userGroup = await this.usergroupRepository.findOne({ where: { users: { id: user.id }, groups: { id: saveDataPaymentDto.group_id } } });
     console.log(userGroup);
-    
+
     if (userGroup) {
       userGroup.isPayment = true;
       await this.usergroupRepository.save(userGroup);
@@ -583,11 +678,11 @@ export class GruopsService {
       throw new Error("User group not found");
     }
     const userGroups = await this.usergroupRepository.find({ where: { groups: { id: group.id } } });
-      const allUsersPaid = userGroups.every(userGroup => userGroup.isPayment);
-      if (allUsersPaid) {
-        group.status = PositionStatusGroupEnum.WAITING_CONFIRMATION_ORDER;
-        await this.groupRepository.save(group);
-      }
+    const allUsersPaid = userGroups.every(userGroup => userGroup.isPayment);
+    if (allUsersPaid) {
+      group.status = PositionStatusGroupEnum.WAITING_CONFIRMATION_ORDER;
+      await this.groupRepository.save(group);
+    }
     return {
       message: "Data payment saved successfully",
       status: 200,
@@ -623,10 +718,15 @@ export class GruopsService {
           await this.groupRepository.delete(group.id);
           for (const user of users) {
             const send = await this.firebaseRepository.sendPushNotification(user.fcmToken, {
-              title: 'G-Choice notification', body: `The group ${product.product_name} has expired and has been deleted due to insufficient participants.`
+              title: 'G-Choice notification',
+              body: `The group ${product.product_name} has expired and has been deleted due to insufficient participants.`
             })
             console.log(send);
-
+            const newNotificaton = new Notifications();
+            newNotificaton.title = 'G-Choice notification';
+            newNotificaton.body = `The group ${product.product_name} has expired and has been deleted due to insufficient participants.`;
+            newNotificaton.user = user;
+            await this.notificationsRepository.save(newNotificaton);
           }
         }
       }

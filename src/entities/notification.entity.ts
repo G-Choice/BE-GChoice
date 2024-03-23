@@ -11,6 +11,11 @@ export class Notifications {
     @IsNotEmpty()
     @IsString()
     title: string;
+    
+    @Column({ type: 'varchar' })
+    @IsNotEmpty()
+    @IsString()
+    body: string;
 
     @CreateDateColumn({ type: 'timestamp', nullable: true })
     created_at?: Date;

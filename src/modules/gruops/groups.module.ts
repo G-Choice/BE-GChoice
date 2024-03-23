@@ -10,17 +10,18 @@ import { ProductDiscount } from 'src/entities/product_discount.entity';
 import { FirebaseModule } from 'src/firebase/firebase.module';
 import { Shop } from 'src/entities/shop.entity';
 import { Receiving_station } from 'src/entities/receiving_station';
+import { Notifications } from 'src/entities/notification.entity';
 // import { Group_user_product } from 'src/entities/group_user_product.entity';
 
 @Module({
-    imports: [
-      TypeOrmModule.forFeature([Product,User_group,User,Group,ProductDiscount,Shop,Receiving_station]),
-      FirebaseModule
-    ],
-    controllers:[GruopsController],
-    providers: [GruopsService],
-   
-  })
-export class GruopsModule {}
+  imports: [
+    TypeOrmModule.forFeature([Product, User_group, User, Group, ProductDiscount, Shop, Receiving_station, Notifications]),
+    FirebaseModule
+  ],
+  controllers: [GruopsController],
+  providers: [GruopsService],
+
+})
+export class GruopsModule { }
 
 

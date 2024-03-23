@@ -1,4 +1,4 @@
-import { Body, Post, Controller, UseGuards, Get, Query, Param, Put } from '@nestjs/common';
+import { Body, Post, Controller, UseGuards, Get, Query, Param, Put, Delete, NotFoundException } from '@nestjs/common';
 import { GruopsService } from './groups.service';
 import { createGroupDto } from './dto/createGroup.dto';
 import { AuthGuard } from '../guards/auth.guard';
@@ -16,13 +16,13 @@ export class GruopsController {
 
     @Get('/getGroupByShop')
     @UseGuards(AuthGuard)
-    async getGroupsByShop(@Query()getGroupParams:GetGroupParams,@CurrentUser() user: User): Promise<any> {
-        return this.groupsService.getGroupsByShop(getGroupParams,user);
+    async getGroupsByShop(@Query() getGroupParams: GetGroupParams, @CurrentUser() user: User): Promise<any> {
+        return this.groupsService.getGroupsByShop(getGroupParams, user);
     }
     @UseGuards(AuthGuard)
     @Get('/:product_id')
-    async getAllGroups(@Param('product_id') product_id: number,@Query() params: GetGroupByUserParams, @CurrentUser() user: User): Promise<any> {
-        return this.groupsService.getAllGroups(product_id,params, user);
+    async getAllGroups(@Param('product_id') product_id: number, @Query() params: GetGroupByUserParams, @CurrentUser() user: User): Promise<any> {
+        return this.groupsService.getAllGroups(product_id, params, user);
 
     }
     @Get('/statusGroup/:group_id')
@@ -60,6 +60,27 @@ export class GruopsController {
     async joinGroup(@Body() joinGroupDto: JoinGroupDto, @CurrentUser() user: User): Promise<any> {
         return this.groupsService.joinGroup(joinGroupDto, user);
     }
+
+    @UseGuards(AuthGuard)
+    @Delete('/remove-user/:group_id')
+    async removeUserFromGroup(@Param('group_id') group_id: number,@CurrentUser() user: User): Promise<any> {
+        try {
+            return await this.groupsService.removeUserFromGroup(group_id,user);
+        } catch (error) {
+            throw new NotFoundException(error.message || 'Failed to remove user from group');
+        }
+    }
+
+    @UseGuards(AuthGuard)
+    @Delete('/delete-group/:group_id')
+    async deleteGroup(@Param('group_id') group_id: number,@CurrentUser() user: User): Promise<any> {
+        try {
+            return await this.groupsService.deleteGroup(group_id,user);
+        } catch (error) {
+            throw new NotFoundException(error.message || 'Failed to delete group');
+        }
+    }
+    
 
     @UseGuards(AuthGuard)
     @Post('/saveDataPayment')
