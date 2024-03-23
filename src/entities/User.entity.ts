@@ -6,6 +6,7 @@ import { ProductReview } from './ProductReviews.entity';
 import { Group } from './group.entity';
 import { User_group } from './user_group.entity';
 import { Receiving_station } from './receiving_station';
+import { Notifications } from './notification.entity';
 
 @Entity('users')
 export class User {
@@ -18,7 +19,7 @@ export class User {
   username: string;
 
   @Column({ type: 'varchar', length: 255 })
-  @IsEmail()
+  @IsEmail()  
   email: string;
 
   @Column({ type: 'varchar' })
@@ -78,5 +79,6 @@ export class User {
   @OneToMany(() =>  User_group, user_group =>  user_group .users)
   user_groups: User_group[];
 
-  
+  @OneToMany(() => Notifications, notification => notification.user)
+  notifications: Notifications[];
 } 
