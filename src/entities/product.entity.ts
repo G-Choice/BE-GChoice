@@ -6,7 +6,8 @@ import { Category } from './category.entity';
 import { Shop } from './shop.entity';
 import { ProductDiscount } from './product_discount.entity';
 import { Group } from './group.entity';
-// import { Carts } from './cart.entity';
+import { Order } from './order.entity';
+
 
 @Entity('products')
 export class Product {
@@ -57,6 +58,10 @@ export class Product {
 
   @OneToMany(() => ProductReview, review => review.product)
   reviews: ProductReview[];
+
+  @OneToMany(() => Order, order => order.product)
+  orders: Order[];
+
 
   @ManyToOne(() => Category, category => category.product, {
     onDelete: 'CASCADE',

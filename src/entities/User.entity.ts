@@ -7,6 +7,7 @@ import { Group } from './group.entity';
 import { User_group } from './user_group.entity';
 import { Receiving_station } from './receiving_station';
 import { Notifications } from './notification.entity';
+import { Order } from './order.entity';
 
 @Entity('users')
 export class User {
@@ -81,4 +82,7 @@ export class User {
 
   @OneToMany(() => Notifications, notification => notification.user)
   notifications: Notifications[];
+
+  @OneToMany(() => Order, order => order.user)
+  orders: Order[];
 } 

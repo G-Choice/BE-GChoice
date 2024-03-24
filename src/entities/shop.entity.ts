@@ -4,6 +4,7 @@ import { User } from './User.entity';
 import { Product } from './product.entity';
 import { Category } from './category.entity';
 import { Group } from './group.entity';
+import { Order } from './order.entity';
 
 @Entity('shops')
 export class Shop {
@@ -59,4 +60,8 @@ export class Shop {
 
     @OneToMany(() => Category, category => category.shop,)
     categories: Category[];
+
+
+    @OneToMany(() => Order, order => order.shop,)
+    orders: Order[];
 }

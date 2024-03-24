@@ -14,6 +14,7 @@ import { ShopModule } from './modules/shop/shop.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { ReceivingStationModule } from './modules/receiving_station/receiving_station.module';
 import { NotificationModule } from './modules/notification/notification.module';
+import { OrderModule } from './modules/order/order.module';
 
 
 
@@ -32,7 +33,8 @@ import { NotificationModule } from './modules/notification/notification.module';
     ShopModule,
     PaymentModule,
     ReceivingStationModule,
-    NotificationModule
+    NotificationModule,
+    OrderModule,
 
 
   ],
