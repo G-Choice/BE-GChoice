@@ -55,6 +55,12 @@ export class ProductController {
         return this.productService.getAllproductByShop(params, user);
     }
 
+    @UseGuards(AuthGuard)
+    @Get('/countProductByShop')
+    countProductByShop(@CurrentUser() user: User) {
+        return this.productService.countProductByShop(user);
+    }
+    
     @Get('/productOfShop/:shop_id')
     productOfShop(@Param('shop_id') shop_id : number) {
         return this.productService.productOfShop(shop_id);

@@ -1,4 +1,4 @@
-import { Body, HttpCode, HttpStatus, Injectable, NotFoundException, Param } from '@nestjs/common';
+import { BadRequestException, Body, HttpCode, HttpStatus, Injectable, NotFoundException, Param } from '@nestjs/common';
 import { Group } from 'src/entities/group.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
@@ -149,6 +149,30 @@ export class GruopsService {
       productByGroup,
       message: 'Successfully!'
     };
+  }
+
+  async countGroupByShop(user: User): Promise<any> {
+    try {
+      console.log(user);
+      
+      const shop = await this.shopRepository.findOne({ where: { user: { id: user.id } } });
+      if (!shop) {
+        throw new BadRequestException("Shop not found");
+      }
+      const completedGroupsCount = await this.groupRepository
+      .createQueryBuilder('group')
+      .where('group.shop = :shopId', { shopId: shop.id })
+      .andWhere('group.status = :status', { status: PositionStatusGroupEnum.COMPLETED })
+      .getCount();
+      
+      return {
+        message: "Successfully counted completed groups for the shop",
+        statusCode: HttpStatus.OK,
+        data: completedGroupsCount
+      };
+    } catch (error) {
+      throw new NotFoundException(error.message);
+    }
   }
 
   async getGroupsByShop(params: GetGroupParams, user: User): Promise<any> {
@@ -354,7 +378,7 @@ export class GruopsService {
           let discountPercentage = 0;
           for (const discount of product_discounts) {
             if (data.quantity_product >= discount.minQuantity) {
-              discountPercentage = parseFloat(discount.discountPercentage);
+              discountPercentage =discount.discountPercentage;
               break;
             }
           }
@@ -462,7 +486,7 @@ export class GruopsService {
         let discountPercentage = 0;
         for (const discount of product_discounts) {
           if (findGroup.current_quantity >= discount.minQuantity) {
-            discountPercentage = parseFloat(discount.discountPercentage);
+            discountPercentage = discount.discountPercentage;
             break;
           }
         }

@@ -2,6 +2,7 @@
   import { IsInt, Min, IsDate, } from 'class-validator';
   import { Product } from './product.entity';
   import { StatusEnum } from 'src/common/enum/enums';
+import { Shop } from './shop.entity';
 
   @Entity('product_discount')
   export class ProductDiscount {
@@ -13,8 +14,8 @@
     @Min(1)
     minQuantity: number;
 
-    @Column({ type: 'decimal', precision: 5, scale: 2 })
-    discountPercentage: string;
+    @Column()
+    discountPercentage: number;
     
     @Column({
       type: 'enum',
@@ -33,5 +34,8 @@
     @JoinColumn({ name: 'product_id' })
     products: Product;
 
-
+    
+    @ManyToOne(() => Shop, shop => shop.productDiscounts)
+    @JoinColumn({ name: 'shop_id' })
+    shop: Shop;
   }

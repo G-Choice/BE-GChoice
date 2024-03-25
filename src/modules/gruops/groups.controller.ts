@@ -13,7 +13,12 @@ import { GetGroupByUserParams } from './dto/getGroupByUser.dto';
 export class GruopsController {
     constructor(private groupsService: GruopsService) { }
 
-
+    @UseGuards(AuthGuard)
+    @Get('/countGroupByShop')
+    countGroupByShop(@CurrentUser() user: User) {
+        return this.groupsService.countGroupByShop(user);
+    }
+    
     @Get('/getGroupByShop')
     @UseGuards(AuthGuard)
     async getGroupsByShop(@Query() getGroupParams: GetGroupParams, @CurrentUser() user: User): Promise<any> {
@@ -36,6 +41,7 @@ export class GruopsController {
         return this.groupsService.getItemGroups(group_id, user);
     }
 
+   
 
     @UseGuards(AuthGuard)
     @Get()

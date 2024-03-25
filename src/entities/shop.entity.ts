@@ -5,6 +5,7 @@ import { Product } from './product.entity';
 import { Category } from './category.entity';
 import { Group } from './group.entity';
 import { Order } from './order.entity';
+import { ProductDiscount } from './product_discount.entity';
 
 @Entity('shops')
 export class Shop {
@@ -53,7 +54,7 @@ export class Shop {
 
     @OneToMany(() => Group, group => group.shop) // Establishing a One-to-Many relationship with Group
     groups: Group[]; // Assuming a shop can have multiple groups
-    @OneToMany(() => Product, product => product.shop,{
+    @OneToMany(() => Product, product => product.shop, {
         cascade: true,
     })
     products: Product[];
@@ -64,4 +65,9 @@ export class Shop {
 
     @OneToMany(() => Order, order => order.shop,)
     orders: Order[];
+
+    @OneToMany(() => ProductDiscount, productDiscount => productDiscount.shop)
+    productDiscounts: ProductDiscount[];
+
+    
 }

@@ -90,6 +90,24 @@ export class ProductService {
       );
     }
   }
+  async countProductByShop(user: User): Promise<any> {
+    try {
+      const shop = await this.shopRepository.findOne({ where: { user: { id: user.id } } });
+      if (!shop) {
+        throw new NotFoundException('Shop not found');
+      }
+      const products = await this.productRepository.find({ where: { shop: { id: shop.id } } });
+      const productCount = products.length;
+
+      return {
+        message: 'Success',
+        data: { count: productCount },
+        status: HttpStatus.OK
+      };
+    } catch (error) {
+      throw new NotFoundException(error.message);
+    }
+  }
 
   async getAllproductByShop(params: GetProductParams, @CurrentUser() user: User,) {
     const page = params.page || 1;
@@ -236,7 +254,7 @@ export class ProductService {
       });
       const avgRating = ((totalRating / productDetail.reviews.length) || 0).toFixed(0);
       const discountsWithPrice = productDetail.discounts.map(discount => {
-        const discountPrice = (productDetail.price - (productDetail.price * parseFloat(discount.discountPercentage) / 100));
+        const discountPrice = (productDetail.price - (productDetail.price * discount.discountPercentage / 100));
         return { ...discount, discountPrice };
       });
 
