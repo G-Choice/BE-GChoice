@@ -15,7 +15,26 @@ export class ShopController {
         private readonly shopService: ShopService
     ) { }
 
+    @UseGuards(AuthGuard)
+    @Get('/totalPrice')
+    async getTotalPriceForCompletedGroups(@CurrentUser() user :User) {
+      const totalPrice = await this.shopService.calculateTotalPriceForCompletedGroups(user);
+      return { totalPrice };
+    }
 
+    @UseGuards(AuthGuard)
+    @Get('gettotalorderOfmonth')
+    async getTotalOrdersForCurrentMonth(@CurrentUser() user :User) {
+      const totalOrders = await this.shopService.getTotalOrdersForCurrentMonth(user);
+      return { totalOrders };
+    }
+
+    @UseGuards(AuthGuard)
+    @Get('/totalRevenue')
+    async getTotalRevenueForCurrentMonth(@CurrentUser() user :User) {
+      const totalRevenue = await this.shopService.getTotalRevenueForCurrentMonth(user);
+      return { totalRevenue };
+    }
 
     @Get('/shopdetail')
     @UseGuards(AuthGuard)

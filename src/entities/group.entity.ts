@@ -57,6 +57,7 @@ export class Group {
   @ManyToOne(() => Shop, shop => shop.groups) 
   @JoinColumn({ name: 'shop_id' })
   shop: Shop; 
+  
   @UpdateDateColumn({ nullable: true })
   update_At: Date; 
   
