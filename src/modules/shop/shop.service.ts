@@ -176,6 +176,32 @@ export class ShopService {
     }
   }
 
+  async getRevenueDataForCurrentYear(@CurrentUser() user: User): Promise<{ month: number, revenue: number }[]> {
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth() + 1; 
+    const currentYear = currentDate.getFullYear();
+    const shop = await this.shopRepository.findOne({ where: { user: { id: user.id } } });
+    const monthlyRevenues: { month: number, revenue: number }[] = [];
+
+    for (let i = 0; i < 12; i++) {
+      const targetDate = new Date(currentYear, currentMonth - 1 - i, 1); 
+      const firstDayOfMonth = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1); 
+      const lastDayOfMonth = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0);
+
+      const totalRevenue = await this.groupRepository.createQueryBuilder("group")
+        .select("SUM(user_group.price)", "totalRevenue")
+        .innerJoin("group.user_groups", "user_group")
+        .where("group.shop_id = :shopId", { shopId: shop.id })
+        .andWhere("group.status = :status", { status: PositionStatusGroupEnum.COMPLETED })
+        .andWhere("group.update_At BETWEEN :startDate AND :endDate", { startDate: firstDayOfMonth, endDate: lastDayOfMonth })
+        .getRawOne();
+
+      monthlyRevenues.push({ month: targetDate.getMonth() + 1, revenue: totalRevenue.totalRevenue || 0 });
+    }
+
+    return monthlyRevenues.reverse(); 
+  }
+
   async calculateTotalPriceForCompletedGroups(@CurrentUser() user: User): Promise<number> {
     const shop = await this.shopRepository.findOne({ where: { user: { id: user.id } } })
     const completedGroups = await this.groupRepository.find({
@@ -210,8 +236,8 @@ export class ShopService {
       },
       relations: ['user_groups'],
     });
-    console.log( completedGroups );
-    
+    console.log(completedGroups);
+
 
     let totalRevenue = 0;
     for (const group of completedGroups) {
@@ -224,7 +250,7 @@ export class ShopService {
   }
 
   async getTotalOrdersForCurrentMonth(user: User): Promise<number> {
-    const shop = await this.shopRepository.findOne({ where: { user: {id:user.id} } });
+    const shop = await this.shopRepository.findOne({ where: { user: { id: user.id } } });
 
     const currentDate = new Date();
     const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);

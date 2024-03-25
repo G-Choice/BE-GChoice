@@ -15,6 +15,13 @@ export class ShopController {
         private readonly shopService: ShopService
     ) { }
 
+
+    @UseGuards(AuthGuard) 
+    @Get('/revenue')
+    async getRevenueDataForCurrentYear(@CurrentUser() user :User) {
+      const revenueData = await this.shopService.getRevenueDataForCurrentYear(user );
+      return revenueData;
+    }
     @UseGuards(AuthGuard)
     @Get('/totalPrice')
     async getTotalPriceForCompletedGroups(@CurrentUser() user :User) {
@@ -79,5 +86,7 @@ export class ShopController {
     async deleteShop(@CurrentUser() user: User): Promise<any>{
         return this.shopService.deleteShop(user);
     }
+
+
 
 }
