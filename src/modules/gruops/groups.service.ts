@@ -637,7 +637,7 @@ export class GruopsService {
       if (!existingUser) {
         throw new NotFoundException('User does not exist.');
       }
-      const existingShop = await this.shopRepository.findOne({ where: { id: existingUser.id } });
+      const existingShop = await this.shopRepository.findOne({ where: {user:{id: existingUser.id } }});
       if (!existingShop) {
         throw new NotFoundException('Shop does not exist.');
       }
