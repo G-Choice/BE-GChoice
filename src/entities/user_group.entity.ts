@@ -34,7 +34,7 @@ export class User_group {
 
     { onDelete: 'NO ACTION', onUpdate: 'NO ACTION' }
   )
-  @JoinColumn([{ name: 'user_id', referencedColumnName: 'id' }])
+  @JoinColumn({ name: 'user_id' })
   users: User;
 
   @ManyToOne(
@@ -43,6 +43,6 @@ export class User_group {
 
     { onDelete: 'NO ACTION', onUpdate: 'NO ACTION' }
   )
-  @JoinColumn([{ name: 'group_id', referencedColumnName: 'id' }])
+  @JoinColumn({ name: 'group_id' })
   groups: Group;
 }

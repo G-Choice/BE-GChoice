@@ -74,8 +74,8 @@ export class User {
   @OneToMany(() => ProductReview , productReviews => productReviews.user)
   productReviews:  ProductReview [];
   
-  // @ManyToMany(() => Group, group => group.users)
-  // groups: Group[];
+  @ManyToMany(() => Group, group => group.users)
+  groups: Group[];
 
   @OneToMany(() =>  User_group, user_group =>  user_group .users)
   user_groups: User_group[];
