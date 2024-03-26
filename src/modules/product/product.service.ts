@@ -13,7 +13,7 @@ import { ResponseItem } from 'src/common/dtos/responseItem';
 import { loginUserDto } from '../auth/dto/login.dto';
 import { Category } from 'src/entities/category.entity';
 // import { ProductImage } from 'src/entities/product_image.entity';
-import { ProductReview } from 'src/entities/ProductReviews.entity';
+import { ProductReview } from 'src/entities/productReviews.entity';
 import { CurrentUser } from '../guards/user.decorator';
 import { User } from 'src/entities/User.entity';
 import { Shop } from 'src/entities/shop.entity';

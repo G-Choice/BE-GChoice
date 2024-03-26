@@ -6,7 +6,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Product } from 'src/entities/product.entity';
 import { Category } from 'src/entities/category.entity';
 // import { ProductImage } from 'src/entities/product_image.entity';
-import { ProductReview } from 'src/entities/ProductReviews.entity';
+import { ProductReview } from 'src/entities/productReviews.entity';
 import {Shop} from 'src/entities/shop.entity';
 import { Group } from 'src/entities/group.entity';
 

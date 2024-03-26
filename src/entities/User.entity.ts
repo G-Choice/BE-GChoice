@@ -2,7 +2,7 @@ import { IsBoolean, IsEmail, IsNotEmpty, IsNumber, IsOptional, IsPhoneNumber, Is
 import { PositionEnum ,StatusEnum } from 'src/common/enum/enums';
 import { PrimaryGeneratedColumn, Column, Entity, CreateDateColumn, OneToMany, ManyToMany, JoinTable, OneToOne } from 'typeorm';
 import { Shop } from './shop.entity';
-import { ProductReview } from './ProductReviews.entity';
+import { ProductReview } from './productReviews.entity';
 import { Group } from './group.entity';
 import { User_group } from './user_group.entity';
 import { Receiving_station } from './receiving_station';
@@ -71,7 +71,7 @@ export class User {
   @OneToOne(() => Receiving_station, receiving_station => receiving_station.user) 
   receiving_station:Receiving_station;
 
-  @OneToMany(() => ProductReview , (productReviews) => productReviews.users)
+  @OneToMany(() => ProductReview , productReviews => productReviews.user)
   productReviews:  ProductReview [];
   
   @ManyToMany(() => Group, group => group.users)

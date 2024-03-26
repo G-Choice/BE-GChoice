@@ -1,7 +1,7 @@
 import { IsEnum, IsNotEmpty, IsNumber, IsString } from 'class-validator';
 import { PositionEnum, StatusEnum } from 'src/common/enum/enums';
 import { PrimaryGeneratedColumn, Column, Entity, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, OneToMany, ManyToOne, JoinColumn } from 'typeorm';
-import { ProductReview } from './ProductReviews.entity';
+import { ProductReview } from './productReviews.entity';
 import { Category } from './category.entity';
 import { Shop } from './shop.entity';
 import { ProductDiscount } from './product_discount.entity';
@@ -56,7 +56,7 @@ export class Product {
   delete_At: Date;
 
 
-  @OneToMany(() => ProductReview, review => review.product)
+  @OneToMany(() => ProductReview, productReview =>  productReview.product)
   reviews: ProductReview[];
 
   @OneToMany(() => Order, order => order.product)
