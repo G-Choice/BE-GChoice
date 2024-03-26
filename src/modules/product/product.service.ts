@@ -246,7 +246,9 @@ export class ProductService {
         .addSelect(['users.id', 'users.username', 'users.email', 'users.image'])
         .where('product.id = :id', { id })
         .getOne();
-
+      console.log('====================================');
+      console.log(productDetail);
+      console.log('====================================');
       if (!productDetail) {
         throw new NotFoundException('Product not found');
       }
