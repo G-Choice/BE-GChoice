@@ -242,8 +242,8 @@ export class ProductService {
         .addSelect(['discount.id', 'discount.minQuantity', 'discount.discountPercentage'])
         .leftJoin('product.reviews', 'reviews')
         .addSelect(['reviews.id', 'reviews.rating', 'reviews.comment', 'reviews.created_at'])
-        // .leftJoin('reviews.users', 'users')
-        // .addSelect(['users.id', 'users.username', 'users.email', 'users.image'])
+        .leftJoin(' productReviews.user', 'users')
+        .addSelect(['users.id', 'users.username', 'users.email', 'users.image'])
         .where('product.id = :id', { id })
         .getOne();
       console.log('====================================');
