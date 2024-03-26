@@ -231,6 +231,9 @@ export class ProductService {
 
   async getProductDetail(id: number): Promise<ResponseItem<any>> {
     try {
+      console.log('====================================');
+      console.log(id);
+      console.log('====================================');
       const productDetail = await this.productRepository
         .createQueryBuilder('product')
         .leftJoin('product.shop', 'shop')

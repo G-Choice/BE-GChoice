@@ -60,6 +60,11 @@ export class ProductController {
     countProductByShop(@CurrentUser() user: User) {
         return this.productService.countProductByShop(user);
     }
+    @Get(':id')
+    getDetailProduct(@Param('id') id: number) {
+        return this.productService.getProductDetail(id);
+    }
+
     
     @Get('/productOfShop/:shop_id')
     productOfShop(@Param('shop_id') shop_id : number) {
@@ -70,10 +75,6 @@ export class ProductController {
         return this.productService.getAllproduct(params);
     }
 
-    @Get(':id')
-    getDetailProduct(@Param('id') id: number) {
-        return this.productService.getProductDetail(id);
-    }
 
     @Patch(':id')
     @UseGuards(AuthGuard)
