@@ -65,8 +65,8 @@ export class Group {
   @JoinColumn({ name: 'product_id' })
   products: Product;
 
-  @ManyToMany(() => User, user => user.groups)
-  users: User[];
+  // @ManyToMany(() => User, user => user.groups)
+  // users: User[];
 
   @OneToMany(() => User_group, user_group => user_group.groups)
   user_groups: User_group[];
