@@ -8,6 +8,9 @@ export class PaymentService {
 
   async createPaymentIntent(amount: number) {
     try {
+      console.log('====================================');
+      console.log("Aaaaaa");
+      console.log('====================================');
       const paymentIntent = await this.stripe.paymentIntents.create({
         amount,
         currency: 'usd',
