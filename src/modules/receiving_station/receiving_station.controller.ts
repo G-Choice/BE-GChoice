@@ -5,10 +5,6 @@ import { User } from 'src/entities/User.entity';
 import { AuthGuard } from '../guards/auth.guard';
 import { GetGroupParams } from './dto/get_group.dto';
 
-// lấy tất cả các trạm nhận hàng  done
-// lấy tất cả các order của trạm đó  done
-// update status khi khách hàng đã nhận hàng
-
 @Controller('receiving-station')
 export class ReceivingStationController {
     constructor(private readonly receivingStationService: ReceivingStationService) { }
@@ -29,6 +25,11 @@ export class ReceivingStationController {
     @Put('/confirm_received_item/:id')
     async confirmReceivedItem(@Param('id') id: number, ): Promise<any> {
         return this.receivingStationService.confirmReceivedItem(id);
+    }
+
+    @Put('/updateStatusOrder/:id')
+    async updateStatusOrder(@Param('id') id: number, ): Promise<any> {
+        return this.receivingStationService.updateStatusOrder(id);
     }
 
 }
