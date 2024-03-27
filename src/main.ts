@@ -6,7 +6,7 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 async function bootstrap() {
   dotenv.config();
   
-  let app = await NestFactory.create(AppModule);
+  let app = await NestFactory.create(AppModule, { cors: true });
   const config = new DocumentBuilder()
     .setTitle('AIP G-CHOICE')
     .setDescription('Cố mà gọi api nghe mấy cưng')
