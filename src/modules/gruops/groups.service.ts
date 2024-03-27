@@ -154,17 +154,17 @@ export class GruopsService {
   async countGroupByShop(user: User): Promise<any> {
     try {
       console.log(user);
-      
+
       const shop = await this.shopRepository.findOne({ where: { user: { id: user.id } } });
       if (!shop) {
         throw new BadRequestException("Shop not found");
       }
       const completedGroupsCount = await this.groupRepository
-      .createQueryBuilder('group')
-      .where('group.shop = :shopId', { shopId: shop.id })
-      .andWhere('group.status = :status', { status: PositionStatusGroupEnum.COMPLETED })
-      .getCount();
-      
+        .createQueryBuilder('group')
+        .where('group.shop = :shopId', { shopId: shop.id })
+        .andWhere('group.status = :status', { status: PositionStatusGroupEnum.COMPLETED })
+        .getCount();
+
       return {
         message: "Successfully counted completed groups for the shop",
         statusCode: HttpStatus.OK,
@@ -378,7 +378,7 @@ export class GruopsService {
           let discountPercentage = 0;
           for (const discount of product_discounts) {
             if (data.quantity_product >= discount.minQuantity) {
-              discountPercentage =discount.discountPercentage;
+              discountPercentage = discount.discountPercentage;
               break;
             }
           }
@@ -500,7 +500,7 @@ export class GruopsService {
         await this.usergroupRepository.save(newUser_group);
         const item_groups = await this.usergroupRepository.find({ where: { groups: { id: joinGroupDto.group_id } } })
         console.log('====================================');
-        console.log(item_groups );
+        console.log(item_groups);
         console.log('====================================');
         for (const item_group of item_groups) {
           item_group.price = (product.price - (product.price * discountPercentage / 100)) * item_group.quantity;
@@ -573,6 +573,17 @@ export class GruopsService {
       if (findGroup && notAllowedStatus.includes(findGroup.status)) {
         throw new Error('Cannot remove the group');
       }
+      const user_group = await this.usergroupRepository.find({where:{groups:{id:group_id}}});
+      if (user_group.length === 1) {
+        await Promise.all([
+          this.usergroupRepository.delete({ groups: { id: group_id } }),
+          this.groupRepository.delete(group_id),
+         
+        ]);
+        return {
+          message: 'Group deleted successfully',
+        };
+      }
       const existingUserGroup = await this.usergroupRepository.findOne({ where: { groups: { id: group_id }, users: { id: user.id } } });
       if (existingUserGroup) {
         findGroup.current_quantity -= existingUserGroup.quantity;
@@ -598,10 +609,10 @@ export class GruopsService {
       if (!existingUser) {
         throw new NotFoundException('User does not exist.');
       }
-        const existingUserGroup = await this.usergroupRepository.findOne({ where: { groups: { id: group_id }, users: { id: user.id }, role: PositionGroupEnum.LEADER } });
-        if (!existingUserGroup) {
-            throw new Error('Only group leaders can delete the group');
-        }
+      const existingUserGroup = await this.usergroupRepository.findOne({ where: { groups: { id: group_id }, users: { id: user.id }, role: PositionGroupEnum.LEADER } });
+      if (!existingUserGroup) {
+        throw new Error('Only group leaders can delete the group');
+      }
       const notAllowedStatus = [
         'waiting_for_payment',
         'waiting_confirmation_order',
@@ -613,11 +624,11 @@ export class GruopsService {
       if (findGroup && notAllowedStatus.includes(findGroup.status)) {
         throw new Error('Cannot delete the group');
       }
-      const existingUserGroups = await this.usergroupRepository.find({ where: { groups: { id: group_id } }});
+      const existingUserGroups = await this.usergroupRepository.find({ where: { groups: { id: group_id } } });
       await Promise.all(existingUserGroups.map(async (userGroup) => {
-        await this.usergroupRepository.remove(userGroup); 
-    }));
-    await this.groupRepository.delete(group_id);
+        await this.usergroupRepository.remove(userGroup);
+      }));
+      await this.groupRepository.delete(group_id);
       return {
         message: 'delete group successfully',
         data: null,
@@ -637,7 +648,7 @@ export class GruopsService {
       if (!existingUser) {
         throw new NotFoundException('User does not exist.');
       }
-      const existingShop = await this.shopRepository.findOne({ where: {user:{id: existingUser.id } }});
+      const existingShop = await this.shopRepository.findOne({ where: { user: { id: existingUser.id } } });
       if (!existingShop) {
         throw new NotFoundException('Shop does not exist.');
       }
