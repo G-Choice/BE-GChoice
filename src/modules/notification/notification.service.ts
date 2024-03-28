@@ -8,15 +8,20 @@ import { Repository } from 'typeorm';
 
 @Injectable()
 export class NotificationService {
- 
+
     constructor(
         @InjectRepository(Notifications)
         private readonly notificationsRepository: Repository<Notifications>,
-    
-      ) { }
-      async getNotificationByUser(user: User): Promise<any> {
+
+    ) { }
+    async getNotificationByUser(user: User): Promise<any> {
         try {
-            const notifications = await this.notificationsRepository.find({ where: { user: { id:user.id } } });
+            const notifications = await this.notificationsRepository.find({
+                where: {
+                    user: { id: user.id }
+                },
+                order: { created_at: 'DESC' }
+            });
             return {
                 message: "Notifications retrieved successfully",
                 statusCode: 200,
@@ -26,7 +31,7 @@ export class NotificationService {
             console.error('Error fetching notifications:', error);
             return {
                 message: "Failed to retrieve notifications",
-                statusCode:500,
+                statusCode: 500,
             };
         }
     }
