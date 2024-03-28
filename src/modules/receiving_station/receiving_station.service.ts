@@ -125,4 +125,22 @@ export class ReceivingStationService {
       throw error;
     }
   }
+  async updateStatusOrder(id: number): Promise<any> {
+    try {
+      const order = await this.groupRepository.findOne({where: {id: id}});
+      if (!order) {
+        return { success: false, message: 'Order not found' };
+      }
+      if (order.status !== PositionStatusGroupEnum.WAITING_DELIVERY) {
+        return { success: false, message: 'Order is not in WAITING_DELIVERY status' };
+      }
+      order.status = PositionStatusGroupEnum.FETCHING_ITEMS;
+      await this.groupRepository.save(order);
+
+      return { success: true, message: 'Order status updated successfully' };
+    } catch (error) {
+
+      return { success: false, message: 'Failed to update order status', error };
+    }
+  }
 }

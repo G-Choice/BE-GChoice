@@ -31,4 +31,8 @@ export class ReceivingStationController {
         return this.receivingStationService.confirmReceivedItem(id);
     }
 
+    @Put('/updateStatusOrder/:id')
+    async updateStatusOrder(@Param('id') id: number, ): Promise<any> {
+        return this.receivingStationService.updateStatusOrder(id);
+    }
 }
