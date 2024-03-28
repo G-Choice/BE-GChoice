@@ -13,7 +13,7 @@ export class PaymentService {
       console.log('====================================');
       const paymentIntent = await this.stripe.paymentIntents.create({
         amount,
-        currency: 'usd',
+        currency: 'vnd',
         automatic_payment_methods: {
           enabled: true,
         },

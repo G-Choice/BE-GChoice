@@ -688,11 +688,14 @@ export class GruopsService {
 
   async saveDataPayment(@Body() saveDataPaymentDto: SaveDataPayemntDto, user: User): Promise<any> {
     const group = await this.groupRepository.findOne({ where: { id: saveDataPaymentDto.group_id } })
+ 
+   console.log("group",group);
+
     if (!group) {
       throw new Error("Group not found");
     }
     console.log(group);
-    const userGroup = await this.usergroupRepository.findOne({ where: { users: { id: user.id }, groups: { id: saveDataPaymentDto.group_id } } });
+    const userGroup = await this.usergroupRepository.findOne({ where: { users: { id: user.id }, groups: { id: group.id } } });
     console.log(userGroup);
 
     if (userGroup) {
